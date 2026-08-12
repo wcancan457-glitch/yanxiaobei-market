@@ -1,0 +1,114 @@
+name: Deploy to Hong Kong server
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the latest release
+        uses: actions/checkout@v4
+
+      - name: Upload application files
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          source: mobile-web-demo
+          target: /tmp/yanxiaobei-release
+          rm: true
+          timeout: 60s
+          command_timeout: 5m
+
+      - name: Install and start the application
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          timeout: 60s
+          command_timeout: 8m
+          script: |
+            set -eu
+
+            APP_DIR=/opt/yanxiaobei-market
+            RELEASE_DIR=/tmp/yanxiaobei-release/mobile-web-demo
+
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync
+
+            mkdir -p "$APP_DIR/data"
+            rsync -a --delete --exclude 'data/' "$RELEASE_DIR/" "$APP_DIR/"
+            chown -R root:root "$APP_DIR"
+            chown -R www-data:www-data "$APP_DIR/data"
+            chmod 750 "$APP_DIR/data"
+
+            cat > /etc/systemd/system/yanxiaobei-market.service <<'SERVICE'
+            [Unit]
+            Description=Yanxiaobei Campus Marketplace
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=www-data
+            Group=www-data
+            WorkingDirectory=/opt/yanxiaobei-market
+            Environment=NODE_ENV=production
+            Environment=PORT=5177
+            Environment=APP_TOKEN=yxb-mvp-2026
+            ExecStart=/usr/bin/node /opt/yanxiaobei-market/server.js
+            Restart=always
+            RestartSec=3
+            NoNewPrivileges=true
+            PrivateTmp=true
+            ProtectSystem=full
+            ReadWritePaths=/opt/yanxiaobei-market/data
+
+            [Install]
+            WantedBy=multi-user.target
+            SERVICE
+
+            cat > /etc/nginx/sites-available/yanxiaobei-market <<'NGINX'
+            server {
+                listen 80 default_server;
+                listen [::]:80 default_server;
+                server_name _;
+
+                client_max_body_size 6m;
+
+                location / {
+                    proxy_pass http://127.0.0.1:5177;
+                    proxy_http_version 1.1;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                }
+            }
+            NGINX
+
+            rm -f /etc/nginx/sites-enabled/default
+            ln -sfn /etc/nginx/sites-available/yanxiaobei-market /etc/nginx/sites-enabled/yanxiaobei-market
+
+            systemctl daemon-reload
+            systemctl enable --now yanxiaobei-market
+            systemctl restart yanxiaobei-market
+            nginx -t
+            systemctl enable --now nginx
+            systemctl reload nginx
+
+            curl --fail --silent --show-error http://127.0.0.1:5177/ > /dev/null
+            curl --fail --silent --show-error http://127.0.0.1/api/state > /dev/null
+            systemctl --no-pager --full status yanxiaobei-market | head -n 15
+
+      - name: Verify the public site
+        run: curl --fail --silent --show-error --max-time 20 "http://${{ secrets.SERVER_HOST }}/" > /dev/null
