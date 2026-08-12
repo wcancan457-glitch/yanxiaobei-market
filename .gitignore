@@ -1,0 +1,19 @@
+﻿# Local runtime output
+*.log
+
+# Temporary authorization artifacts
+feishu_doc_authorization_qr.png
+
+
+# 交付包与备份（不提交大文件）
+*.zip
+*.backup-*.html
+
+# 交接文档（含服务器凭据，绝不提交）
+HANDOFF_*.md
+
+# 运行数据（服务端持久化，不提交）
+mobile-web-demo/data/db.json
+
+# Node
+node_modules/

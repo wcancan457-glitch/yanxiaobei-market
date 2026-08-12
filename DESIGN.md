@@ -1,0 +1,59 @@
+﻿# DESIGN.md — 燕小北集市视觉系统
+
+<!-- impeccable:design-schema 1 -->
+
+## World: 校园海报墙（Campus Poster Wall）
+
+把校园二手集市想象成一面社团招新海报墙：商品是钉在墙上的小广告，分类是贴纸标签，校徽像盖章，燕小北是贴在墙上的吉祥物贴纸。信息靠"纸面 + 图钉 + 贴纸 + 手写标题"的质感组织，传达校园、亲切、可信。
+
+- 产品名与吉祥物：燕小北（深蓝 #1D3458 / 亮蓝 #1E78FF / 青蓝 #0094BE 的蓝色系角色）
+- 校园背书：北京工业大学校徽（盖章式圆形处理）
+- 一句话：这不是企业级电商，是学生宿舍楼下那面热闹但可靠的海报墙。
+
+## Tokens
+
+- 背景纸面：`--paper: #F4EEE1`，深一档 `--paper-deep: #EAE1CF`
+- 卡片纸：`--card: #FFFDF7`
+- 墨色文字：`--ink: #1D3458`（燕小北深蓝），次级 `--ink-2: #46608C`
+- 弱化文字：`--muted: #4C5A72`（对比度 ≥4.5:1）
+- 主行动色：`--blue: #0094BE`（燕小北亮蓝），深 `--blue-deep: #123D7E`
+- 强调青：`--cyan: #0094BE`
+- 图钉红：`--red-pin: #E2574C`（价格、图钉、危险操作）
+- 琥珀：`--amber: #EFA83C`（胶带、待处理）
+- 状态绿：`--green: #2F9E5B`（在售/成功）
+- 分割线：`--line: #DDD3BE`
+- 阴影：纸面投影 `--shadow-1` / 弹层 `--shadow-2`（带偏移+模糊，非硬偏移）
+
+## Type
+
+- 展示字体：ZCOOL KuaiLe（站酷快乐体），自托管 woff2（`assets/fonts/zcool-kuaile.woff2`），用于品牌标题、板块标题、页面标题。手写感传达校园海报气息。
+- 正文：系统中文黑体栈（PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。
+- 标题层级：h1 36px（hero）→ 板块 23px → 卡片 15px，均用字重/字号区分，不使用渐变色文字。
+
+## Components
+
+- 图钉：`product-card::before` 红色圆点（径向高光 + 阴影），钉在卡片左上角。
+- 胶带：`quick-item::before` 半透明琥珀色条，斜贴分类贴纸顶部。
+- 校徽盖章：圆形白底 + 轻微旋转（7deg）+ 投影。
+- 燕小北贴纸：`top-mascot` 透明底吉祥物，带 drop-shadow，置于 hero 右侧。
+- 标签（tag）：圆角胶囊，纸色底/状态色底，文字+颜色双重表达状态。
+- 卡片：白纸卡，圆角 16px，柔纸影，按压 scale(0.97)。
+- 底部导航：半透明纸带 + backdrop-blur，active 用燕小北蓝 + 顶部指示条。
+- 图标：统一 24px 内联 SVG，stroke 1.8，round cap/join（首页/发布/消息/我的/搜索/返回/更多/箭头）。
+
+## Motion
+
+一个 authored moment：商品/任务卡片入场 `pin-in`（translateY 12px + fade，340ms cubic-bezier(0.22,1,0.36,1)），模拟"刚贴上墙"。按压反馈 scale。尊重 prefers-reduced-motion。
+
+## States
+
+- 在售：绿色标签；交易中：琥珀标签 + 按钮"暂不可咨询"；已售/已下架：灰色。
+- 未登录：浏览可用，发布/联系弹登录。
+- 空状态：虚线纸卡 + 引导文案。
+- 按钮 disabled：纸灰色、去阴影。
+- focus-visible：2px 燕小北蓝 outline；输入框 focus 加 3px 淡蓝光环。
+- 自定义 scrollbar、selection、caret 均从配色衍生。
+
+## Responsive
+
+移动优先（430px 壳，手机全宽）。≥700px 时手机壳居中、圆角 30px。所有布局在桌面宽度下保持 430px 壳，无横向溢出。

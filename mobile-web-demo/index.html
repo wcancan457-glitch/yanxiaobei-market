@@ -1,0 +1,2518 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>燕小北集市 · 校园二手与互助</title>
+  <style>
+/* ===== 燕小北集市 · 校园海报墙视觉 ===== */
+@font-face {
+  font-family: "ZCOOL KuaiLe";
+  src: url("assets/fonts/zcool-kuaile.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root {
+  --paper: #F4EEE1;
+  --paper-deep: #EAE1CF;
+  --card: #FFFDF7;
+  --ink: #1D3458;
+  --ink-2: #46608C;
+  --muted: #4C5A72;
+  --line: #DDD3BE;
+  --blue: #0094BE;
+  --blue-btn: #0079A3;
+  --blue-deep: #123D7E;
+  --cyan: #0094BE;
+  --red-pin: #E2574C;
+  --amber: #EFA83C;
+  --green: #2F9E5B;
+  --shadow-1: 0 1px 2px rgba(29, 52, 88, 0.05), 0 8px 20px rgba(29, 52, 88, 0.08);
+  --shadow-2: 0 2px 4px rgba(29, 52, 88, 0.06), 0 16px 36px rgba(29, 52, 88, 0.13);
+  --radius: 16px;
+  --font-display: "ZCOOL KuaiLe", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-body: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: #E7DFCE;
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button, input, textarea, select { font: inherit; color: inherit; }
+button { border: 0; cursor: pointer; background: none; }
+
+::selection { background: rgba(30, 111, 255, 0.22); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: #C9BEA6; border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
+input::placeholder, textarea::placeholder { color: #98A1B0; }
+
+.phone-shell {
+  width: min(100vw, 430px);
+  min-height: 100vh;
+  margin: 0 auto;
+  background: var(--paper);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(29, 52, 88, 0.22);
+}
+
+.app { min-height: 100vh; padding: env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom)); }
+.view { display: none; }
+.view.active { display: block; }
+
+/* ===== 顶部海报式页眉 ===== */
+.topbar {
+  padding: 12px 18px 16px;
+  background:
+    radial-gradient(120% 90% at 88% -12%, rgba(30, 111, 255, 0.12), transparent 52%),
+    linear-gradient(180deg, #F8F3E8, var(--paper));
+  color: var(--ink);
+  position: relative;
+  overflow: hidden;
+}
+
+.app-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 2px 10px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.status-icons { letter-spacing: 2px; font-size: 15px; font-weight: 600; }
+
+.hero-brand { display: grid; gap: 8px; padding: 0 92px 10px 0; min-height: 70px; position: relative; z-index: 1; }
+
+.hero-brand h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 1.05;
+  font-weight: 400;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 0 rgba(29, 52, 88, 0.06);
+}
+
+.hero-brand p {
+  margin: 0;
+  max-width: 280px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.hero-trust { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 2px; }
+.hero-trust span {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(29, 52, 88, 0.06);
+}
+
+/* 校徽——像海报上的盖章 */
+.school-emblem {
+  position: absolute;
+  right: 18px;
+  top: 56px;
+  width: 66px;
+  height: 66px;
+  object-fit: contain;
+  z-index: 1;
+  pointer-events: none;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
+  border: 1px solid rgba(29, 52, 88, 0.14);
+  transform: rotate(7deg);
+  box-shadow: 0 3px 10px rgba(29, 52, 88, 0.14);
+}
+
+/* 燕小北——像贴在墙上的吉祥物贴纸 */
+.top-mascot {
+  position: absolute;
+  right: 8px;
+  bottom: -6px;
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  z-index: 1;
+  opacity: 0.95;
+  pointer-events: none;
+  transform: rotate(-4deg);
+  filter: drop-shadow(0 12px 18px rgba(29, 52, 88, 0.20));
+}
+
+.search-box {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: #8A94A5;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--shadow-1);
+  margin-top: 4px;
+}
+.search-box .icon { display: grid; place-items: center; color: var(--blue); }
+.search-box svg { width: 19px; height: 19px; display: block; }
+.search-box span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-box input {
+  border: 0;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  padding: 0;
+}
+.search-box input::placeholder { color: #8A94A5; }
+.search-box input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+/* ===== 筛选 chips ===== */
+.filters {
+  display: flex;
+  gap: 9px;
+  padding: 12px 18px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.filters::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(29, 52, 88, 0.04);
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease, transform 120ms ease;
+}
+.chip:active { transform: scale(0.96); }
+.chip.active {
+  color: #fff;
+  background: var(--blue-btn);
+  border-color: var(--blue-btn);
+  box-shadow: 0 3px 10px rgba(30, 111, 255, 0.28);
+}
+
+/* ===== 板块 ===== */
+.section { padding: 4px 18px 0; }
+.module-switch { padding-top: 14px; padding-bottom: 2px; }
+
+[hidden] { display: none !important; }
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 16px 0 12px;
+}
+.section-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--ink);
+}
+.section-head button {
+  color: var(--blue-btn);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.section-head button svg { width: 14px; height: 14px; }
+
+/* ===== 分类贴纸 ===== */
+.quick-grid {
+  display: flex;
+  gap: 10px;
+  margin: 0 -18px 6px;
+  padding: 2px 18px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.quick-grid::-webkit-scrollbar { display: none; }
+
+.quick-item {
+  flex: 0 0 auto;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  position: relative;
+  box-shadow: var(--shadow-1);
+}
+.quick-item::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -5px;
+  transform: translateX(-50%) rotate(-2.5deg);
+  width: 30px;
+  height: 9px;
+  background: rgba(239, 168, 60, 0.40);
+  border-radius: 3px;
+}
+.quick-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: #F1ECDF;
+  color: var(--blue-deep);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.quick-icon img { width: 17px; height: 17px; object-fit: contain; display: block; }
+
+/* ===== 商品卡片：墙上的小广告 ===== */
+.product-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+@keyframes pin-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.product-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 0;
+  background: var(--card);
+  border: 1px solid rgba(29, 52, 88, 0.10);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+  text-align: left;
+  color: var(--ink);
+  width: 100%;
+  position: relative;
+  animation: pin-in 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.product-card:active { transform: scale(0.97); box-shadow: 0 1px 4px rgba(29, 52, 88, 0.10); }
+
+/* 图钉 */
+.product-card::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #FF9A8F, var(--red-pin) 48%, #AE3328);
+  box-shadow: 0 2px 5px rgba(29, 52, 88, 0.30);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.product-img {
+  min-height: 0;
+  aspect-ratio: 1 / 0.82;
+  border-radius: 0;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 34px;
+  font-weight: 800;
+  isolation: isolate;
+}
+.product-img::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0) 38%);
+  pointer-events: none;
+}
+.product-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.img-book { background: linear-gradient(135deg, #0094BE 0%, #48CCE6 100%); }
+.img-lamp { background: linear-gradient(135deg, #123D7E 0%, #48CCE6 100%); }
+.img-bike { background: linear-gradient(135deg, #1D3458 0%, #48CCE6 100%); }
+.img-phone { background: linear-gradient(135deg, #0094BE 0%, #48CCE6 100%); }
+.img-clothes { background: linear-gradient(135deg, #7C5CBF 0%, #E884A8 100%); }
+.img-ball { background: linear-gradient(135deg, #E2574C 0%, #F2A93B 100%); }
+.img-guitar { background: linear-gradient(135deg, #123D7E 0%, #7C5CBF 100%); }
+
+.product-info { min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+.product-title { font-size: 15px; line-height: 1.35; margin: 0; font-weight: 800; letter-spacing: 0; }
+.product-desc { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.meta-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+.tag {
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: #F1EBDD;
+  white-space: nowrap;
+}
+.tag.green { color: #177A40; background: #E2F3E8; }
+.tag.yellow { color: #96600E; background: #FFF1CF; }
+
+.price-row {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+}
+.price {
+  color: var(--red-pin);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.want {
+  height: 30px;
+  padding: 0 13px;
+  border-radius: 999px;
+  background: var(--blue-btn);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(30, 111, 255, 0.24);
+}
+.want.locked { background: #E9E2D3; color: var(--muted); box-shadow: none; }
+
+.seller-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.seller-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #E4EFFE;
+  color: var(--blue-deep);
+  font-size: 11px;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+.seller-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+
+/* ===== 互助任务 ===== */
+.task-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.task-actions .mini-btn {
+  min-height: 32px;
+  padding: 0 13px;
+  font-size: 12px;
+}
+.task-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.task-card {
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid rgba(29, 52, 88, 0.10);
+  box-shadow: var(--shadow-1);
+  position: relative;
+  animation: pin-in 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.task-top { display: grid; gap: 8px; margin-bottom: 9px; }
+.task-top strong { font-size: 15px; line-height: 1.35; font-weight: 800; }
+.reward { color: var(--red-pin); font-size: 19px; font-weight: 800; white-space: nowrap; }
+
+/* ===== 发布页 ===== */
+.form-page { padding: 20px 18px 18px; }
+.page-title {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.form-panel {
+  display: grid;
+  gap: 15px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow-1);
+}
+.field { display: grid; gap: 7px; }
+.field label { font-size: 13px; color: var(--ink-2); font-weight: 700; }
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px 13px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(30, 111, 255, 0.14);
+}
+.field textarea { min-height: 86px; resize: vertical; }
+
+.photo-upload {
+  height: 112px;
+  border-radius: 14px;
+  border: 1.5px dashed #A9B2C0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+  padding: 12px;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.photo-upload:hover { border-color: var(--blue); background: #F7FAFF; }
+.photo-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.photo-upload img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; display: none; }
+.photo-upload.has-image { border-style: solid; padding: 0; }
+.photo-upload.has-image span { display: none; }
+.photo-upload.has-image img { display: block; }
+.product-img.uploaded { background: #F4F1E9; }
+.product-img.uploaded img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.primary-btn {
+  height: 48px;
+  border-radius: 14px;
+  background: var(--blue-btn);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(30, 111, 255, 0.26);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.primary-btn:active { transform: scale(0.98); }
+.primary-btn:disabled { background: #D8D2C3; color: #8C9180; box-shadow: none; cursor: not-allowed; }
+
+.inline-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 12px; }
+.secondary-btn {
+  height: 46px;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-weight: 700;
+}
+
+/* ===== 消息 / 我的 ===== */
+.message-list, .profile-list { padding: 18px; display: grid; gap: 12px; }
+.notice-card, .profile-card {
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+.notice-card h3, .profile-card h3 { margin: 0 0 8px; font-size: 16px; font-weight: 800; }
+.notice-card p, .profile-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+.my-product-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.my-product-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.my-product-info {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.my-product-info strong {
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.my-product-info .status-badge { width: fit-content; }
+.my-product-actions {
+  display: flex;
+  gap: 7px;
+  flex: 0 0 auto;
+}
+.my-product-actions .mini-btn {
+  min-height: 30px;
+  padding: 0 11px;
+  font-size: 12px;
+}
+.conversation-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 58px;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  color: var(--ink);
+  text-align: left;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.conversation-card:active { transform: scale(0.98); }
+
+.conversation-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: #E4EFFE;
+  color: var(--blue-deep);
+  font-size: 18px;
+  font-weight: 800;
+  overflow: hidden;
+}
+.conversation-avatar img { width: 130%; height: 130%; object-fit: cover; transform: translate(-6px, -6px); }
+
+.conversation-main { min-width: 0; display: grid; gap: 5px; }
+.conversation-title { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.conversation-title strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; line-height: 1.2; font-weight: 800; }
+
+.status-badge {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #E4EFFE;
+  color: var(--blue-deep);
+  font-size: 11px;
+  font-weight: 700;
+}
+.status-badge.warn { background: #FFF1CF; color: #96600E; }
+.status-badge.done { background: #E2F3E8; color: #177A40; }
+.status-badge.closed { background: #ECE7DB; color: #7C8594; }
+
+.conversation-preview, .conversation-meta { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-preview { font-size: 14px; line-height: 1.35; }
+.conversation-meta { font-size: 12px; }
+
+.conversation-thumb {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+}
+.conversation-thumb img, .chat-product-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.empty-state {
+  grid-column: 1 / -1;
+  padding: 20px;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.action-row { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 12px; }
+.mini-btn {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #F0EBDF;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.mini-btn.primary { background: var(--blue-btn); color: #fff; }
+.mini-btn.danger { background: #FDE9E6; color: #C74337; }
+
+/* ===== 聊天 ===== */
+.chat-log { display: grid; gap: 9px; max-height: 260px; overflow: auto; padding: 6px 0 12px; }
+.chat-bubble {
+  width: fit-content;
+  max-width: 84%;
+  padding: 10px 13px;
+  border-radius: 16px;
+  background: #EAE3D4;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.chat-bubble.mine { margin-left: auto; background: var(--blue-btn); color: #fff; }
+
+.phone-shell.in-chat .bottom-nav { display: none; }
+.phone-shell.in-chat .app { padding-bottom: 0; }
+.chat-view { min-height: 100vh; background: var(--paper); }
+.chat-view.active { display: grid; grid-template-rows: auto auto 1fr auto; }
+
+.list-header {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 8px;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.list-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+}
+.list-back svg { width: 20px; height: 20px; }
+.list-title { display: grid; justify-items: center; gap: 2px; min-width: 0; }
+.list-title strong { font-size: 18px; font-weight: 800; }
+.list-title span { color: var(--muted); font-size: 12px; }
+.list-sorts { padding-top: 10px; }
+.chat-header {
+  min-height: 72px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.chat-back, .chat-more {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+}
+.chat-back svg { width: 20px; height: 20px; }
+.chat-more svg { width: 18px; height: 18px; }
+
+.chat-peer { min-width: 0; display: grid; justify-items: center; gap: 2px; }
+.chat-peer strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 18px; font-weight: 800; }
+.chat-peer span { color: var(--muted); font-size: 12px; }
+
+.chat-product-bar {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px 18px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+}
+.chat-product-thumb { width: 58px; height: 58px; border-radius: 14px; overflow: hidden; display: grid; place-items: center; color: #fff; font-size: 20px; font-weight: 800; }
+.chat-product-copy { min-width: 0; display: grid; gap: 5px; }
+.chat-product-copy strong, .chat-product-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-product-copy strong { font-size: 15px; }
+.chat-product-copy span { color: var(--muted); font-size: 12px; }
+.chat-product-actions { display: flex; gap: 9px; margin-top: 4px; flex-wrap: wrap; }
+
+.chat-page-log { align-content: end; max-height: none; overflow: auto; padding: 16px 18px; }
+.chat-page-log .empty-state { background: transparent; text-align: center; }
+.chat-time { justify-self: center; padding: 4px 9px; border-radius: 999px; background: rgba(29, 52, 88, 0.06); color: #7C8594; font-size: 11px; }
+
+.chat-input-bar {
+  display: grid;
+  grid-template-columns: 1fr 54px;
+  gap: 9px;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+.chat-input-bar input {
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 16px;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+}
+.chat-input-bar input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(30, 111, 255, 0.12); }
+.chat-send-btn {
+  width: 54px;
+  height: 46px;
+  border-radius: 999px;
+  background: var(--blue-btn);
+  color: #fff;
+  font-weight: 800;
+}
+
+/* ===== 我的 ===== */
+.profile-hero {
+  background: linear-gradient(135deg, #123D7E 0%, #0094BE 100%);
+  color: #fff;
+  padding: 24px 18px 22px;
+  position: relative;
+  overflow: hidden;
+}
+.profile-hero::after {
+  content: "";
+  position: absolute;
+  right: -34px;
+  top: -20px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.10);
+}
+.profile-hero .login-pill { background: rgba(255, 255, 255, 0.16); color: #fff; width: fit-content; margin-top: 12px; }
+.profile-hero .login-dot { background: #FFD77A; }
+
+.profile-top { position: relative; z-index: 1; display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 13px; align-items: center; padding-right: 96px; }
+.avatar-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  overflow: hidden;
+  padding: 0;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+.avatar-btn img { width: 150%; height: 150%; object-fit: cover; object-position: 10% 26%; transform: translate(-18px, -16px); display: block; }
+.profile-name { display: grid; gap: 5px; }
+.profile-name strong { font-size: 23px; line-height: 1.1; font-weight: 800; }
+.profile-name span { color: rgba(255, 255, 255, 0.84); font-size: 13px; line-height: 1.4; }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 16px; }
+.stat {
+  padding: 11px 8px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  text-align: center;
+  backdrop-filter: blur(4px);
+}
+.stat strong { display: block; font-size: 19px; font-weight: 800; }
+.stat span { font-size: 12px; opacity: 0.88; }
+
+/* ===== 底部导航 ===== */
+.bottom-nav {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(100vw, 430px);
+  height: calc(60px + env(safe-area-inset-bottom));
+  padding: 5px 14px env(safe-area-inset-bottom);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  background: rgba(255, 253, 247, 0.94);
+  border-top: 1px solid var(--line);
+  backdrop-filter: blur(16px);
+  z-index: 20;
+}
+.nav-btn {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  color: #7C8594;
+  background: transparent;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  position: relative;
+  padding-top: 5px;
+  transition: color 140ms ease;
+}
+.nav-btn .icon {
+  width: 42px;
+  height: 30px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: #EFE8D9;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(29, 52, 88, 0.07);
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+.nav-btn svg { width: 22px; height: 22px; display: block; }
+.nav-btn:active .icon { transform: scale(0.90); }
+.nav-btn.active { color: var(--blue-btn); font-weight: 800; }
+.nav-btn.active .icon {
+  background: var(--blue-btn);
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(0, 121, 163, 0.30);
+}
+.nav-badge {
+  position: absolute;
+  top: -2px;
+  left: calc(50% + 6px);
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--red-pin);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  display: none;
+  box-shadow: 0 1px 3px rgba(29, 52, 88, 0.30);
+  z-index: 2;
+}
+.nav-btn.active .icon::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--red-pin);
+  box-shadow: 0 1px 3px rgba(29, 52, 88, 0.30);
+}
+
+/* ===== 弹层 / 详情 sheet ===== */
+.sheet-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(29, 52, 88, 0.40);
+  display: none;
+  align-items: end;
+  justify-content: center;
+  z-index: 30;
+}
+.sheet-mask.open { display: flex; }
+
+.login-mask { align-items: center; padding: 18px; }
+.login-dialog {
+  width: min(100%, 360px);
+  background: var(--card);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: var(--shadow-2);
+}
+.login-dialog h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; font-family: var(--font-display); font-weight: 400; }
+.login-dialog p { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.login-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+
+.sheet {
+  width: min(100vw, 430px);
+  max-height: 88vh;
+  overflow: auto;
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 18px calc(18px + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow-2);
+}
+.grabber { width: 44px; height: 5px; border-radius: 999px; background: #D8CFBC; margin: 0 auto 14px; }
+.sheet-image { height: 180px; border-radius: 14px; margin-bottom: 14px; }
+.sheet h2 { margin: 0 0 8px; font-size: 22px; font-weight: 800; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 12px 0; }
+.detail-item { padding: 11px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+.detail-item span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+.detail-item strong { font-size: 14px; font-weight: 700; }
+.sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(16px);
+  background: rgba(29, 52, 88, 0.94);
+  color: #fff;
+  padding: 11px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+  z-index: 50;
+  width: max-content;
+  max-width: calc(100vw - 36px);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== 桌面壳 ===== */
+@media (min-width: 700px) {
+  body { padding: 24px 0; }
+  .phone-shell { min-height: calc(100vh - 48px); border-radius: 30px; overflow: hidden; }
+  .app { min-height: calc(100vh - 48px); }
+  .bottom-nav { border-radius: 0 0 30px 30px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+  </style>
+</head>
+<body>
+  <main class="phone-shell">
+    <div class="app">
+      <section class="view active" id="home">
+        <header class="topbar">
+          <div class="app-status">
+            <span>9:41</span>
+            <span class="status-icons">▮▮▮  ◠  ▭</span>
+          </div>
+          <img class="school-emblem" src="assets/bjut-emblem-bg.png" alt="北京工业大学校徽">
+          <img class="top-mascot" src="assets/yanxiaobei-transparent.png" alt="燕小北">
+          <div class="hero-brand">
+
+            <h1>燕小北集市</h1>
+            <p>把二手群里的闲置、互助和交易状态，整理成一个清楚可靠的校园集市。</p>
+          </div>
+          <div class="search-box" role="search">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.8"/><path d="m20 20-3.3-3.3"/></svg></span>
+            <input id="searchInput" type="search" placeholder="搜索教材、台灯、自行车、取文件" autocomplete="off">
+          </div>
+        </header>
+
+        <nav class="filters" aria-label="校区筛选">
+          <button class="chip active" data-filter="all">全部</button>
+          <button class="chip" data-filter="pingleyuan">平乐园</button>
+          <button class="chip" data-filter="zhonglan">中蓝</button>
+        </nav>
+
+        <section class="section">
+          <div class="section-head">
+            <h2>精选分类</h2>
+          </div>
+          <div class="quick-grid">
+            <button class="quick-item" data-toast="已切换到教材专区">
+              <span class="quick-icon"><img src="assets/icon-textbook.svg" alt=""></span>
+              教材
+            </button>
+            <button class="quick-item" data-toast="已切换到数码专区">
+              <span class="quick-icon"><img src="assets/icon-digital.svg" alt=""></span>
+              数码
+            </button>
+            <button class="quick-item" data-toast="已切换到生活用品">
+              <span class="quick-icon"><img src="assets/icon-life.svg" alt=""></span>
+              生活
+            </button>
+            <button class="quick-item" data-toast="已切换到服饰专区">
+              <span class="quick-icon"><img src="assets/icon-clothes.svg" alt=""></span>
+              服饰
+            </button>
+            <button class="quick-item" data-toast="已切换到运动专区">
+              <span class="quick-icon"><img src="assets/icon-sport.svg" alt=""></span>
+              运动
+            </button>
+            <button class="quick-item" data-toast="已切换到乐器专区">
+              <span class="quick-icon"><img src="assets/icon-music.svg" alt=""></span>
+              乐器
+            </button>
+          </div>
+        </section>
+
+        <nav class="filters module-switch" aria-label="内容模块切换">
+          <button class="chip active" data-module="products">热门闲置</button>
+          <button class="chip" data-module="tasks">互助任务</button>
+        </nav>
+
+        <section class="section" id="productModule">
+          <div class="section-head">
+            <h2>热门闲置</h2>
+            <button data-tab="list" aria-label="查看更多闲置">更多 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5.5 6.5 6.5L9 18.5"/></svg></button>
+          </div>
+
+          <div class="product-list" id="productList">
+            <button class="product-card" data-campus="pingleyuan" data-title="近代史教材与重点笔记" data-price="18" data-img="img-book" data-location="平乐园校区 · 图书馆门口" data-state="在售" data-desc="教材干净，附复习重点和课堂笔记，适合期末复习。">
+              <div class="product-img img-book">书</div>
+              <div class="product-info">
+                <h3 class="product-title">近代史教材与重点笔记</h3>
+                <p class="product-desc">教材干净，附复习重点和课堂笔记，适合期末复习。</p>
+                <div class="meta-row">
+                  <span class="tag green">平乐园</span>
+                  <span class="tag">教材</span>
+                  <span class="tag">九成新</span>
+                </div>
+                <div class="price-row">
+                  <span class="price">¥18</span>
+                  <span class="want">我想要</span>
+                </div>
+              </div>
+            </button>
+
+            <button class="product-card" data-campus="zhonglan" data-title="宿舍护眼台灯" data-price="35" data-img="img-lamp" data-location="中蓝校区 · 食堂门口" data-state="交易中" data-desc="卖家已和一位买家谈定，正在等待线下面交。卖家取消交易后才会恢复咨询。">
+              <div class="product-img img-lamp">灯</div>
+              <div class="product-info">
+                <h3 class="product-title">宿舍护眼台灯</h3>
+                <p class="product-desc">三档亮度，USB 供电，适合宿舍和自习使用。</p>
+                <div class="meta-row">
+                  <span class="tag green">中蓝</span>
+                  <span class="tag">生活用品</span>
+                  <span class="tag yellow">交易中</span>
+                </div>
+                <div class="price-row">
+                  <span class="price">¥35</span>
+                  <span class="want locked">暂不可咨询</span>
+                </div>
+              </div>
+            </button>
+
+            <button class="product-card" data-campus="pingleyuan" data-title="校园通勤自行车" data-price="120" data-img="img-bike" data-location="平乐园校区 · 西门附近" data-state="在售" data-desc="车况稳定，刹车刚调过，适合校内通勤。">
+              <div class="product-img img-bike">车</div>
+              <div class="product-info">
+                <h3 class="product-title">校园通勤自行车</h3>
+                <p class="product-desc">车况稳定，刹车刚调过，适合校内通勤。</p>
+                <div class="meta-row">
+                  <span class="tag green">平乐园</span>
+                  <span class="tag">出行</span>
+                  <span class="tag">八成新</span>
+                </div>
+                <div class="price-row">
+                  <span class="price">¥120</span>
+                  <span class="want">我想要</span>
+                </div>
+              </div>
+            </button>
+          </div>
+        </section>
+
+        <section class="section" id="taskModule" hidden>
+          <div class="section-head">
+            <h2>互助任务</h2>
+            <button data-tab="post">发布任务</button>
+          </div>
+          <div class="task-strip" id="taskList">
+            <article class="task-card">
+              <div class="task-top">
+                <strong>帮忙取一份文件</strong>
+                <span class="reward">¥8</span>
+              </div>
+              <div class="meta-row">
+                <span class="tag green">中蓝校区</span>
+                <span class="tag">取送</span>
+                <span class="tag">今天 18:30 前</span>
+              </div>
+            </article>
+            <article class="task-card">
+              <div class="task-top">
+                <strong>毕业季闲置整理拍照</strong>
+                <span class="reward">¥25</span>
+              </div>
+              <div class="meta-row">
+                <span class="tag green">平乐园校区</span>
+                <span class="tag">兼职</span>
+                <span class="tag">约 1 小时</span>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section class="view" id="post">
+        <div class="form-page">
+          <h1 class="page-title">发布</h1>
+          <div class="filters" style="padding: 0 0 12px;">
+            <button class="chip active" id="postProductTab" type="button">二手商品</button>
+            <button class="chip" id="postTaskTab" type="button">互助任务</button>
+          </div>
+          <form class="form-panel" id="postForm">
+            <label class="photo-upload" id="photoUpload">
+              <span id="photoUploadText">添加商品图片</span>
+              <img id="photoPreview" alt="商品图片预览">
+              <input id="photoInput" type="file" accept="image/*">
+            </label>
+            <div class="field">
+              <label for="title">标题</label>
+              <input id="title" placeholder="例如：近代史教材与重点笔记">
+            </div>
+            <div class="field">
+              <label for="category">分类</label>
+              <select id="category">
+                <option>教材资料</option>
+                <option>数码电子</option>
+                <option>生活用品</option>
+                <option>服饰美妆</option>
+                <option>运动户外</option>
+                <option>乐器文具</option>
+                <option>互助兼职</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="campus">校区</label>
+              <select id="campus">
+                <option>平乐园校区</option>
+                <option>中蓝校区</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="place">公开取货地点</label>
+              <input id="place" placeholder="例如：食堂门口、教学楼大厅、校门口">
+            </div>
+            <div class="field">
+              <label for="price" id="priceLabel">价格</label>
+              <input id="price" placeholder="请输入价格">
+            </div>
+            <div class="field">
+              <label for="desc">描述</label>
+              <textarea id="desc" placeholder="写清楚成色、瑕疵、交易方式。不填写宿舍号。"></textarea>
+            </div>
+            <button class="primary-btn" type="button">发布商品</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="view" id="messages">
+        <header class="topbar">
+          <div class="brand">
+            <strong>消息</strong>
+            <span>交易买家与卖家的聊天列表</span>
+          </div>
+        </header>
+        <div class="message-list" id="messageList">
+        </div>
+      </section>
+
+      <section class="view chat-view" id="chat">
+        <header class="chat-header">
+          <button class="chat-back" id="backToMessages" type="button" aria-label="返回消息"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+          <div class="chat-peer">
+            <strong id="chatTitle">聊天</strong>
+            <span id="chatSubTitle">校内面交沟通</span>
+          </div>
+          <button class="chat-more" type="button" data-toast="更多功能将在 MVP 后续加入"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.2" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.8" cy="12" r="1.6"/></svg></button>
+        </header>
+        <div class="chat-product-bar" id="chatProductBar"></div>
+        <div class="chat-log chat-page-log" id="chatLog"></div>
+        <div class="chat-input-bar">
+          <input id="chatInput" placeholder="想跟 TA 说点什么...">
+          <button class="chat-send-btn" id="sendChat" type="button">发送</button>
+        </div>
+      </section>
+
+      <section class="view" id="profile">
+        <div class="profile-hero">
+          <div class="profile-top">
+            <button class="avatar-btn" id="avatarLogin" aria-label="点击登录">
+              <img src="assets/yanxiaobei-blue-bg.png" alt="燕小北头像">
+            </button>
+            <div class="profile-name">
+              <strong id="profileName">未登录</strong>
+              <span id="profileMeta">点击头像使用学号密码登录</span>
+            </div>
+          </div>
+          <div class="mascot-panel" style="width: 92px; height: 92px; min-height: 92px; position: absolute; right: 18px; top: 22px; opacity: 0.92;">
+            <img src="assets/yanxiaobei-blue-bg.png" alt="燕小北">
+          </div>
+          <div class="login-pill" id="profileLoginPill"><i class="login-dot"></i> 待登录</div>
+          <div class="stats">
+            <div class="stat"><strong id="statPost">-</strong><span>发布</span></div>
+            <div class="stat"><strong id="statSold">-</strong><span>售出</span></div>
+            <div class="stat"><strong id="statPending">-</strong><span>待确认</span></div>
+          </div>
+        </div>
+        <div class="profile-list" id="profileList">
+          <article class="profile-card">
+            <h3>我的发布</h3>
+            <p>管理在售、交易中、已售和已下架商品。</p>
+          </article>
+          <article class="profile-card">
+            <h3>我想要</h3>
+            <p>查看我想要的商品，以及卖家的处理状态。</p>
+          </article>
+          <article class="profile-card">
+            <h3>账号与安全</h3>
+            <p>学号仅用于身份识别，不向普通用户展示。</p>
+          </article>
+          <article class="profile-card">
+            <h3>平台规则</h3>
+            <p>建议在校内公共地点面交，不填写宿舍号或门牌号。</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <section class="view" id="list">
+      <header class="list-header">
+        <button class="list-back" id="listBack" type="button" aria-label="返回首页"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+        <div class="list-title">
+          <strong id="listTitle">全部闲置</strong>
+          <span>按最新发布排序</span>
+        </div>
+        <span class="list-spacer"></span>
+      </header>
+      <nav class="filters list-sorts" aria-label="排序方式">
+        <button class="chip active" data-sort="new">最新</button>
+        <button class="chip" data-sort="priceAsc">价格从低到高</button>
+        <button class="chip" data-sort="priceDesc">价格从高到低</button>
+      </nav>
+      <section class="section">
+        <div class="product-list" id="listProducts"></div>
+      </section>
+    </section>
+
+    <nav class="bottom-nav" aria-label="底部导航">
+      <button class="nav-btn active" data-tab="home"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.3 12 4.6l8 6.7"/><path d="M6.2 9.7V19a1 1 0 0 0 1 1h9.6a1 1 0 0 0 1-1V9.7"/><path d="M10 20v-4.6h4V20"/></svg></span><span>首页</span></button>
+      <button class="nav-btn" data-tab="post"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.6" y="3.6" width="16.8" height="16.8" rx="4.8"/><path d="M12 8.2v7.6M8.2 12h7.6"/></svg></span><span>发布</span></button>
+      <button class="nav-btn" data-tab="messages"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.8a8.2 8.2 0 0 1-8.2 8.2c-1.5 0-2.9-.4-4.1-1.1L4 20.4l1-4.5A8.2 8.2 0 1 1 21 11.8Z"/><path d="M8.3 12h.01M12 12h.01M15.7 12h.01"/></svg><span class="nav-badge" id="msgBadge"></span></span><span>消息</span></button>
+      <button class="nav-btn" data-tab="profile"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.1" r="3.5"/><path d="M5.4 19.6a6.6 6.6 0 0 1 13.2 0"/></svg></span><span>我的</span></button>
+    </nav>
+  </main>
+
+  <div class="sheet-mask" id="sheetMask" aria-hidden="true">
+    <section class="sheet" role="dialog" aria-modal="true" aria-label="商品详情">
+      <div class="grabber"></div>
+      <div class="sheet-image product-img img-book" id="sheetImg">书</div>
+      <h2 id="sheetTitle">近代史教材与重点笔记</h2>
+      <div class="price" id="sheetPrice">¥18</div>
+      <p class="product-desc" id="sheetDesc" style="display:block; margin-top:10px;">教材干净，附复习重点和课堂笔记，适合期末复习。</p>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span>商品状态</span>
+          <strong id="sheetState">在售</strong>
+        </div>
+        <div class="detail-item">
+          <span>交易方式</span>
+          <strong>校内面交</strong>
+        </div>
+        <div class="detail-item" style="grid-column: 1 / -1;">
+          <span>公开取货地点</span>
+          <strong id="sheetLocation">平乐园校区 · 图书馆门口</strong>
+        </div>
+      </div>
+      <p class="product-desc" id="sheetHint" style="display:block;">平台不收集宿舍号。建议选择食堂门口、教学楼大厅、校门口等公共地点交易。</p>
+      <div class="sheet-actions">
+        <button class="secondary-btn" id="closeSheet">关闭</button>
+        <button class="primary-btn" id="wantButton" type="button" data-toast="已发送我想要，等待卖家处理">我想要</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="sheet-mask login-mask" id="loginMask" aria-hidden="true">
+    <section class="login-dialog" role="dialog" aria-modal="true" aria-label="学号密码登录">
+      <h2>学号登录</h2>
+      <p>登录后可以发布商品、联系卖家、查看我想要和交易状态。</p>
+      <div class="form-panel" style="padding: 0; border: 0; box-shadow: none;">
+        <div class="field">
+          <label for="studentId">学号</label>
+          <input id="studentId" value="20231234" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="studentPassword">密码</label>
+          <input id="studentPassword" type="password" value="123456">
+        </div>
+      </div>
+      <div class="login-actions">
+        <button class="secondary-btn" id="cancelLogin" type="button">取消</button>
+        <button class="primary-btn" id="confirmLogin" type="button">登录</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast">已发送</div>
+
+  <script>
+    const STORAGE_KEY = 'yanxiaobei-campus-market-mvp-v1';
+    const USE_API = location.protocol === 'http:' || location.protocol === 'https:';
+    const phoneShell = document.querySelector('.phone-shell');
+    const views = document.querySelectorAll('.view');
+    const navButtons = document.querySelectorAll('[data-tab]');
+    const toast = document.getElementById('toast');
+    const productList = document.getElementById('productList');
+    const productModule = document.getElementById('productModule');
+    const taskModule = document.getElementById('taskModule');
+    const messageList = document.getElementById('messageList');
+    const profileList = document.getElementById('profileList');
+    const postForm = document.getElementById('postForm');
+    const postProductTab = document.getElementById('postProductTab');
+    const postTaskTab = document.getElementById('postTaskTab');
+    const photoUpload = document.getElementById('photoUpload');
+    const photoUploadText = document.getElementById('photoUploadText');
+    const photoInput = document.getElementById('photoInput');
+    const photoPreview = document.getElementById('photoPreview');
+    const priceLabel = document.getElementById('priceLabel');
+    const sheetMask = document.getElementById('sheetMask');
+    const closeSheet = document.getElementById('closeSheet');
+    const sheetImg = document.getElementById('sheetImg');
+    const sheetTitle = document.getElementById('sheetTitle');
+    const sheetPrice = document.getElementById('sheetPrice');
+    const sheetDesc = document.getElementById('sheetDesc');
+    const sheetLocation = document.getElementById('sheetLocation');
+    const sheetState = document.getElementById('sheetState');
+    const sheetHint = document.getElementById('sheetHint');
+    const wantButton = document.getElementById('wantButton');
+    const avatarLogin = document.getElementById('avatarLogin');
+    const loginMask = document.getElementById('loginMask');
+    const cancelLogin = document.getElementById('cancelLogin');
+    const confirmLogin = document.getElementById('confirmLogin');
+    const profileName = document.getElementById('profileName');
+    const profileMeta = document.getElementById('profileMeta');
+    const profileLoginPill = document.getElementById('profileLoginPill');
+    const statPost = document.getElementById('statPost');
+    const statSold = document.getElementById('statSold');
+    const statPending = document.getElementById('statPending');
+    const chatTitle = document.getElementById('chatTitle');
+    const chatSubTitle = document.getElementById('chatSubTitle');
+    const chatProductBar = document.getElementById('chatProductBar');
+    const chatLog = document.getElementById('chatLog');
+    const chatInput = document.getElementById('chatInput');
+    const backToMessages = document.getElementById('backToMessages');
+    const sendChat = document.getElementById('sendChat');
+    let activeProductId = null;
+    let activeChat = null;
+    let currentFilter = 'all';
+    let currentCategory = 'all';
+    let currentModule = 'products';
+    let currentSearch = '';
+    let postMode = 'product';
+    let uploadedImageData = '';
+
+    const seedState = {
+      currentUserId: '',
+      users: {
+        '20231234': { id: '20231234', name: '燕小北同学', campus: '平乐园校区' },
+        '20239999': { id: '20239999', name: '小周', campus: '中蓝校区' }
+      },
+      products: [
+        {
+          id: 'p1',
+          title: '近代史教材与重点笔记',
+          category: '教材资料',
+          campus: 'pingleyuan',
+          campusText: '平乐园校区',
+          price: 18,
+          location: '平乐园校区 · 图书馆门口',
+          desc: '教材干净，附复习重点和课堂笔记，适合期末复习。',
+          status: 'available',
+          sellerId: '20239999',
+          sellerName: '小周',
+          image: 'assets/products/book.jpg',
+          createdAt: Date.now() - 300000
+        },
+        {
+          id: 'p2',
+          title: '宿舍护眼台灯',
+          category: '生活用品',
+          campus: 'zhonglan',
+          campusText: '中蓝校区',
+          price: 35,
+          location: '中蓝校区 · 食堂门口',
+          desc: '三档亮度，USB 供电，适合宿舍和自习使用。',
+          status: 'available',
+          sellerId: '20239999',
+          sellerName: '小周',
+          image: 'assets/products/lamp.jpg',
+          createdAt: Date.now() - 200000
+        },
+        {
+          id: 'p3',
+          title: '校园通勤自行车',
+          category: '生活用品',
+          campus: 'pingleyuan',
+          campusText: '平乐园校区',
+          price: 120,
+          location: '平乐园校区 · 西门附近',
+          desc: '车况稳定，刹车刚调过，适合校内通勤。',
+          status: 'available',
+          sellerId: '20239999',
+          sellerName: '小周',
+          image: 'assets/products/bike.jpg',
+          createdAt: Date.now() - 100000
+        },
+        {
+          id: 'p4',
+          title: '富士拍立得相机 mini',
+          category: '数码电子',
+          campus: 'pingleyuan',
+          campusText: '平乐园校区',
+          price: 199,
+          location: '平乐园校区 · 教学楼大厅',
+          desc: '成色很新，送两盒相纸，校园活动拍照超好用。',
+          status: 'available',
+          sellerId: '20231234',
+          sellerName: '燕小北同学',
+          image: 'assets/products/camera.jpg',
+          createdAt: Date.now() - 500000
+        },
+        {
+          id: 'p5',
+          title: '无线降噪耳机',
+          category: '数码电子',
+          campus: 'zhonglan',
+          campusText: '中蓝校区',
+          price: 89,
+          location: '中蓝校区 · 宿舍楼下',
+          desc: '续航约 20 小时，自习降噪利器，附充电线。',
+          status: 'available',
+          sellerId: '20231234',
+          sellerName: '燕小北同学',
+          image: 'assets/products/earphone.jpg',
+          createdAt: Date.now() - 600000
+        },
+        {
+          id: 'p6',
+          title: '纯棉基础款 T 恤',
+          category: '服饰美妆',
+          campus: 'pingleyuan',
+          campusText: '平乐园校区',
+          price: 15,
+          location: '平乐园校区 · 校门口',
+          desc: 'M 码，穿过两次，洗得干干净净。',
+          status: 'available',
+          sellerId: '20231234',
+          sellerName: '燕小北同学',
+          image: 'assets/products/tshirt.jpg',
+          createdAt: Date.now() - 700000
+        },
+        {
+          id: 'p7',
+          title: '斯伯丁户外篮球',
+          category: '运动户外',
+          campus: 'zhonglan',
+          campusText: '中蓝校区',
+          price: 45,
+          location: '中蓝校区 · 操场边',
+          desc: '手感好，气已打足，毕业甩卖。',
+          status: 'available',
+          sellerId: '20231234',
+          sellerName: '燕小北同学',
+          image: 'assets/products/basketball.jpg',
+          createdAt: Date.now() - 800000
+        },
+        {
+          id: 'p8',
+          title: '入门民谣吉他',
+          category: '乐器文具',
+          campus: 'pingleyuan',
+          campusText: '平乐园校区',
+          price: 260,
+          location: '平乐园校区 · 图书馆门口',
+          desc: '41 寸云杉面板，带琴包和变调夹，适合新手。',
+          status: 'available',
+          sellerId: '20239999',
+          sellerName: '小周',
+          image: 'assets/products/guitar.jpg',
+          createdAt: Date.now() - 900000
+        }
+      ],
+      tasks: [
+        {
+          id: 't1',
+          title: '帮忙取一份文件',
+          campus: 'zhonglan',
+          campusText: '中蓝校区',
+          location: '中蓝校区 · 教学楼大厅',
+          reward: 8,
+          desc: '今天 18:30 前帮忙取一份文件。',
+          status: 'open',
+          publisherId: '20239999',
+          createdAt: Date.now() - 240000
+        },
+        {
+          id: 't2',
+          title: '毕业季闲置整理拍照',
+          campus: 'pingleyuan',
+          campusText: '平乐园校区',
+          location: '平乐园校区 · 图书馆附近',
+          reward: 25,
+          desc: '帮忙整理闲置并拍照，大约 1 小时。',
+          status: 'open',
+          publisherId: '20239999',
+          createdAt: Date.now() - 180000
+        }
+      ],
+      intents: [],
+      chats: []
+    };
+
+    let state = loadState();
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return structuredClone(seedState);
+      try {
+        return { ...structuredClone(seedState), ...JSON.parse(raw) };
+      } catch {
+        return structuredClone(seedState);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (USE_API) {
+        fetch('/api/state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-app-token': 'yxb-mvp-2026' },
+          body: JSON.stringify(state)
+        }).catch(() => showToast('后端保存失败，已暂存本地'));
+      }
+    }
+
+    async function hydrateFromServer() {
+      if (!USE_API) return;
+      try {
+        const res = await fetch('/api/state');
+        if (!res.ok) return;
+        const remote = await res.json();
+        if (remote && Array.isArray(remote.products)) {
+          state = { ...structuredClone(seedState), ...remote };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          renderAll();
+        }
+      } catch {
+        showToast('后端连接失败，使用本地数据');
+      }
+    }
+
+    function currentUser() {
+      return state.currentUserId ? state.users[state.currentUserId] : null;
+    }
+
+    function uid(prefix) {
+      return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[char]));
+    }
+
+    function statusText(status) {
+      return {
+        available: '在售',
+        trading: '交易中',
+        sold: '已售',
+        down: '已下架'
+      }[status] || status;
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function switchTab(tabId) {
+      views.forEach((view) => view.classList.toggle('active', view.id === tabId));
+      document.querySelectorAll('.nav-btn').forEach((button) => {
+        button.classList.toggle('active', button.dataset.tab === tabId);
+      });
+      phoneShell.classList.toggle('in-chat', tabId === 'chat');
+      if (tabId === 'messages') renderMessages();
+      if (tabId === 'chat') renderChat();
+      if (tabId === 'profile') renderProfile();
+      if (tabId === 'list') renderList();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function syncContentModule() {
+      productModule.hidden = currentModule !== 'products';
+      taskModule.hidden = currentModule !== 'tasks';
+      document.querySelectorAll('[data-module]').forEach((button) => {
+        button.classList.toggle('active', button.dataset.module === currentModule);
+      });
+    }
+
+    function switchContentModule(module) {
+      currentModule = module;
+      syncContentModule();
+      renderProducts();
+      renderTasks();
+      showToast(module === 'tasks' ? '已切换到互助任务' : '已切换到热门闲置');
+    }
+
+    function openLogin() {
+      loginMask.classList.add('open');
+      loginMask.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeLogin() {
+      loginMask.classList.remove('open');
+      loginMask.setAttribute('aria-hidden', 'true');
+    }
+
+    function closeProductSheet() {
+      sheetMask.classList.remove('open');
+      sheetMask.setAttribute('aria-hidden', 'true');
+    }
+
+    function productCardHtml(product) {
+      const locked = product.status === 'trading';
+      const mine = currentUser()?.id === product.sellerId;
+      const label = mine ? '我的' : locked ? '暂不可咨询' : '我想要';
+      const buttonClass = locked ? 'want locked' : 'want';
+      const sellerInitial = (product.sellerName || '同学').slice(0, 1);
+      const imageHtml = product.image
+        ? `<div class="product-img uploaded"><img src="${product.image}" alt="${escapeHtml(product.title)}"></div>`
+        : `<div class="product-img ${product.imgClass}">${escapeHtml(product.symbol)}</div>`;
+      return `
+        <button class="product-card" data-product-id="${product.id}">
+          ${imageHtml}
+          <div class="product-info">
+            <h3 class="product-title">${escapeHtml(product.title)}</h3>
+            <p class="product-desc">${escapeHtml(product.desc)}</p>
+            <div class="seller-row">
+              <span class="seller-avatar">${escapeHtml(sellerInitial)}</span>
+              <span class="seller-name">${escapeHtml(product.sellerName || '校园同学')}</span>
+              <span>·</span>
+              <span>${product.campus === 'pingleyuan' ? '平乐园' : '中蓝'}</span>
+            </div>
+            <div class="meta-row">
+              <span class="tag">${escapeHtml(product.category.replace('资料', ''))}</span>
+              ${locked ? '<span class="tag yellow">交易中</span>' : '<span class="tag">在售</span>'}
+            </div>
+            <div class="price-row">
+              <span class="price">¥${escapeHtml(product.price)}</span>
+              <span class="${buttonClass}">${label}</span>
+            </div>
+          </div>
+        </button>
+      `;
+    }
+
+    function renderProducts() {
+      const visible = state.products
+        .filter((product) => product.status !== 'sold' && product.status !== 'down')
+        .filter((product) => currentFilter === 'all' || product.campus === currentFilter)
+        .filter((product) => currentCategory === 'all' || product.category === currentCategory)
+    .filter((product) => !currentSearch || `${product.title} ${product.desc} ${product.category} ${product.campusText}`.toLowerCase().includes(currentSearch))
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      if (!visible.length) {
+        productList.innerHTML = '<div class="empty-state">暂时没有符合条件的商品，换个校区或分类看看。</div>';
+        return;
+      }
+
+      productList.innerHTML = visible.map(productCardHtml).join('');
+    }
+
+    function renderTasks() {
+      const taskList = document.getElementById('taskList');
+      const visibleTasks = (state.tasks || [])
+        .filter((task) => task.status !== 'done' && task.status !== 'cancelled')
+        .filter((task) => currentFilter === 'all' || task.campus === currentFilter)
+        .filter((task) => !currentSearch || `${task.title} ${task.desc} ${task.location}`.toLowerCase().includes(currentSearch))
+        .sort((a, b) => b.createdAt - a.createdAt);
+      const user = currentUser();
+      taskList.innerHTML = visibleTasks.length ? visibleTasks.map((task) => {
+        const isPublisher = user?.id === task.publisherId;
+        const isTaker = user?.id === task.takerId;
+        let actionHtml = '';
+        if (task.status === 'open') {
+          actionHtml = isPublisher
+            ? '<span class="tag">我发布的</span>'
+            : '<button class="mini-btn primary" data-task-action="take" data-id="' + task.id + '">接单</button>';
+        } else if (task.status === 'in_progress') {
+          if (isPublisher) {
+            actionHtml = `
+              <div class="task-actions">
+                <button class="mini-btn danger" data-task-action="cancel" data-id="${task.id}">取消任务</button>
+                <button class="mini-btn primary" data-task-action="done" data-id="${task.id}">确认完成</button>
+              </div>`;
+          } else if (isTaker) {
+            actionHtml = '<span class="tag yellow">已接单，等待发布者确认</span>';
+          } else {
+            actionHtml = '<span class="tag yellow">已被接单</span>';
+          }
+        }
+        return `
+          <article class="task-card">
+            <div class="task-top">
+              <strong>${escapeHtml(task.title)}</strong>
+              <span class="reward">¥${escapeHtml(task.reward)}</span>
+            </div>
+            <p class="product-desc" style="display:block; margin-bottom:8px;">${escapeHtml(task.desc)}</p>
+            <div class="seller-row" style="margin-bottom:8px;">
+              <span class="seller-avatar">互</span>
+              <span class="seller-name">校园互助</span>
+              <span>·</span>
+              <span>${escapeHtml(task.campusText)}</span>
+            </div>
+            <div class="meta-row">
+              <span class="tag">互助</span>
+              <span class="tag">${escapeHtml(task.location)}</span>
+            </div>
+            ${actionHtml ? '<div class="task-actions">' + actionHtml + '</div>' : ''}
+          </article>
+        `;
+      }).join('') : '<div class="empty-state">当前校区暂时没有互助任务。</div>';
+    }
+
+    function formatDate(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      return `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    function productThumb(product, className) {
+      if (product.image) {
+        return `<div class="${className}"><img src="${product.image}" alt="${escapeHtml(product.title)}"></div>`;
+      }
+      return `<div class="${className} ${product.imgClass}">${escapeHtml(product.symbol)}</div>`;
+    }
+
+    function conversationStatus(intent, product, userId) {
+      if (product.status === 'sold' || intent?.status === 'sold') {
+        return { text: '交易成功', tone: 'done' };
+      }
+      if (intent?.status === 'rejected') return { text: '已拒绝', tone: 'closed' };
+      if (intent?.status === 'canceled') return { text: '交易取消', tone: 'closed' };
+      if (product.status === 'trading' || intent?.status === 'accepted') {
+        return { text: '交易中', tone: 'warn' };
+      }
+      if (intent?.status === 'pending') {
+        return product.sellerId === userId
+          ? { text: '待处理', tone: 'warn' }
+          : { text: '等待卖家', tone: 'warn' };
+      }
+      return { text: statusText(product.status), tone: '' };
+    }
+
+    function buildConversations(user) {
+      const conversations = new Map();
+      const ensure = (product, peerId, intent = null) => {
+        if (!product || !peerId || peerId === user.id) return;
+        const key = `${product.id}:${peerId}`;
+        const peer = state.users[peerId] || { id: peerId, name: `同学${String(peerId).slice(-4)}`, campus: '校内用户' };
+        const messages = state.chats
+          .filter((message) =>
+            message.productId === product.id &&
+            ((message.from === user.id && message.to === peerId) || (message.from === peerId && message.to === user.id))
+          )
+          .sort((a, b) => a.createdAt - b.createdAt);
+        const lastMessage = messages[messages.length - 1];
+        const status = conversationStatus(intent, product, user.id);
+        const fallback = intent?.status === 'pending' && product.sellerId === user.id
+          ? '对方想要这个商品，点击进入处理'
+          : product.sellerId === user.id
+            ? '围绕这个商品和买家沟通'
+            : '围绕这个商品和卖家沟通';
+        const current = conversations.get(key);
+        const item = {
+          product,
+          peer,
+          intent,
+          status,
+          lastText: lastMessage?.text || fallback,
+          updatedAt: Math.max(lastMessage?.createdAt || 0, intent?.createdAt || 0, product.createdAt || 0)
+        };
+        if (!current || item.updatedAt >= current.updatedAt) conversations.set(key, item);
+      };
+
+      state.intents.forEach((intent) => {
+        const product = state.products.find((item) => item.id === intent.productId);
+        if (!product) return;
+        if (product.sellerId === user.id) ensure(product, intent.buyerId, intent);
+        if (intent.buyerId === user.id) ensure(product, product.sellerId, intent);
+      });
+
+      state.products
+        .filter((product) => product.sellerId === user.id && product.buyerId)
+        .forEach((product) => {
+          const intent = state.intents.find((item) => item.productId === product.id && item.buyerId === product.buyerId);
+          ensure(product, product.buyerId, intent);
+        });
+
+      state.chats.forEach((message) => {
+        if (message.from !== user.id && message.to !== user.id) return;
+        const product = state.products.find((item) => item.id === message.productId);
+        const peerId = message.from === user.id ? message.to : message.from;
+        const intent = state.intents.find((item) =>
+          item.productId === message.productId &&
+          (item.buyerId === peerId || item.buyerId === user.id)
+        );
+        ensure(product, peerId, intent);
+      });
+
+      return [...conversations.values()].sort((a, b) => b.updatedAt - a.updatedAt);
+    }
+
+    function updateMessageBadge() {
+      const user = currentUser();
+      let count = 0;
+      if (user) {
+        count = state.intents.filter((intent) => {
+          const product = state.products.find((item) => item.id === intent.productId);
+          return product && product.sellerId === user.id && intent.status === 'pending';
+        }).length;
+        count += state.tasks.filter((task) => task.status === 'in_progress' && task.publisherId === user.id).length;
+      }
+      const badge = document.getElementById('msgBadge');
+      if (!badge) return;
+      badge.textContent = count > 99 ? '99+' : String(count);
+      badge.style.display = count > 0 ? 'block' : 'none';
+    }
+
+    function renderMessages() {
+      const user = currentUser();
+      if (!user) {
+        messageList.innerHTML = '<div class="empty-state">登录后可以查看交易买家、卖家聊天和处理状态。</div>';
+        return;
+      }
+
+      const conversations = buildConversations(user);
+      messageList.innerHTML = conversations.length ? conversations.map((item) => `
+        <button class="conversation-card" data-action="open-chat" data-product-id="${item.product.id}" data-peer-id="${item.peer.id}">
+          <span class="conversation-avatar"><img src="assets/yanxiaobei-blue-bg.png" alt=""></span>
+          <span class="conversation-main">
+            <span class="conversation-title">
+              <strong>${escapeHtml(item.peer.name)}</strong>
+              <span class="status-badge ${item.status.tone}">${escapeHtml(item.status.text)}</span>
+            </span>
+            <span class="conversation-preview">${escapeHtml(item.lastText)}</span>
+            <span class="conversation-meta">${escapeHtml(item.product.title)} · ${formatDate(item.updatedAt)}</span>
+          </span>
+          ${productThumb(item.product, 'conversation-thumb')}
+        </button>
+      `).join('') : '<div class="empty-state">暂时没有会话。你可以去首页点“我想要”，或发布商品等待买家联系。</div>';
+    }
+
+    function renderProfile() {
+      const user = currentUser();
+      if (!user) {
+        profileName.textContent = '未登录';
+        profileMeta.textContent = '点击头像使用学号密码登录';
+        profileLoginPill.innerHTML = '<i class="login-dot"></i> 待登录';
+        statPost.textContent = '-';
+        statSold.textContent = '-';
+        statPending.textContent = '-';
+        profileList.innerHTML = `
+          <article class="profile-card"><h3>登录后使用</h3><p>点击头像登录后，可以发布商品、处理我想要和查看交易状态。</p></article>
+          <article class="profile-card"><h3>平台规则</h3><p>建议在校内公共地点面交，不填写宿舍号或门牌号。</p></article>
+        `;
+        return;
+      }
+
+      const myProducts = state.products.filter((product) => product.sellerId === user.id);
+      const sold = myProducts.filter((product) => product.status === 'sold').length;
+      const pending = state.intents.filter((intent) => {
+        const product = state.products.find((item) => item.id === intent.productId);
+        return product?.sellerId === user.id && intent.status === 'pending';
+      }).length;
+
+      profileName.textContent = user.name;
+      profileMeta.textContent = `${user.id} · ${user.campus}`;
+      profileLoginPill.innerHTML = '<i class="login-dot"></i> 学号密码已登录';
+      statPost.textContent = String(myProducts.length);
+      statSold.textContent = String(sold);
+      statPending.textContent = String(pending);
+      const manageRows = myProducts.length ? myProducts.map((item) => `
+        <div class="my-product-row">
+          <div class="my-product-info">
+            <strong>${escapeHtml(item.title)}</strong>
+            <span class="status-badge ${item.status === 'available' ? 'done' : item.status === 'trading' ? 'warn' : 'closed'}">${statusText(item.status)}</span>
+          </div>
+          <div class="my-product-actions">
+            ${item.status === 'available'
+              ? `<button class="mini-btn" data-action="down" data-id="${item.id}">下架</button>`
+              : item.status === 'down'
+                ? `<button class="mini-btn primary" data-action="up" data-id="${item.id}">上架</button>`
+                : ''}
+            <button class="mini-btn danger" data-action="del" data-id="${item.id}">删除</button>
+          </div>
+        </div>
+      `).join('') : '<p class="empty-state" style="margin-top:8px;">还没有发布过商品，去首页点发布吧。</p>';
+      profileList.innerHTML = `
+        <article class="profile-card">
+          <h3>我的发布</h3>
+          <p>共 ${myProducts.length} 件商品，${myProducts.filter((item) => item.status === 'trading').length} 件交易中，${sold} 件已售。</p>
+          <div class="my-product-list">${manageRows}</div>
+        </article>
+        <article class="profile-card"><h3>我想要</h3><p>我发起了 ${state.intents.filter((item) => item.buyerId === user.id).length} 个我想要，可以在消息页继续聊天。</p></article>
+        <article class="profile-card"><h3>账号与安全</h3><p>学号仅用于身份识别，不向普通用户展示。</p></article>
+        <article class="profile-card"><h3>退出登录</h3><p><button class="mini-btn danger" data-action="logout">退出当前学号</button></p></article>
+      `;
+    }
+
+    let currentSort = 'new';
+    function renderList() {
+      const title = document.getElementById('listTitle');
+      title.textContent = currentCategory === 'all' ? '全部闲置' : currentCategory;
+      const items = state.products
+        .filter((product) => product.status !== 'sold' && product.status !== 'down')
+        .filter((product) => currentCategory === 'all' || product.category === currentCategory)
+        .filter((product) => !currentSearch || `${product.title} ${product.desc} ${product.category} ${product.campusText}`.toLowerCase().includes(currentSearch))
+        .sort((a, b) => {
+          if (currentSort === 'priceAsc') return a.price - b.price;
+          if (currentSort === 'priceDesc') return b.price - a.price;
+          return b.createdAt - a.createdAt;
+        });
+      document.getElementById('listProducts').innerHTML = items.length
+        ? items.map(productCardHtml).join('')
+        : '<div class="empty-state">没有符合条件的商品。</div>';
+    }
+
+    function renderAll() {
+      renderProducts();
+      renderTasks();
+      syncContentModule();
+      renderMessages();
+      renderProfile();
+      updateMessageBadge();
+    }
+
+    function openProduct(productId) {
+      const product = state.products.find((item) => item.id === productId);
+      if (!product) return;
+      activeProductId = productId;
+      sheetTitle.textContent = product.title;
+      sheetPrice.textContent = `¥${product.price}`;
+      sheetDesc.textContent = product.desc;
+      sheetLocation.textContent = product.location;
+      sheetState.textContent = statusText(product.status);
+      if (product.image) {
+        sheetImg.className = 'sheet-image product-img uploaded';
+        sheetImg.innerHTML = `<img src="${product.image}" alt="${escapeHtml(product.title)}">`;
+      } else {
+        sheetImg.className = `sheet-image product-img ${product.imgClass}`;
+        sheetImg.textContent = product.symbol;
+      }
+
+      const user = currentUser();
+      const mine = user?.id === product.sellerId;
+      const existing = user ? state.intents.find((intent) => intent.productId === product.id && intent.buyerId === user.id && ['pending', 'accepted'].includes(intent.status)) : null;
+      const locked = product.status === 'trading';
+      wantButton.disabled = Boolean(mine || locked || existing);
+      wantButton.textContent = mine ? '这是我的商品' : locked ? '交易中，暂不可咨询' : existing ? '已发送我想要' : '我想要';
+      sheetHint.textContent = locked
+        ? '卖家已与一位买家谈定，其他买家暂时不能咨询。只有卖家取消当前交易后，商品才会恢复在售。'
+        : '平台不收集宿舍号。建议选择食堂门口、教学楼大厅、校门口等公共地点交易。';
+      sheetMask.classList.add('open');
+      sheetMask.setAttribute('aria-hidden', 'false');
+    }
+
+    function requestWant() {
+      const user = currentUser();
+      if (!user) {
+        openLogin();
+        return;
+      }
+      const product = state.products.find((item) => item.id === activeProductId);
+      if (!product) return;
+      if (product.sellerId === user.id) {
+        showToast('不能对自己的商品发送我想要');
+        return;
+      }
+      if (product.status === 'trading') {
+        showToast('商品交易中，暂不可咨询');
+        return;
+      }
+      const exists = state.intents.find((intent) => intent.productId === product.id && intent.buyerId === user.id && ['pending', 'accepted'].includes(intent.status));
+      if (exists) {
+        showToast('你已经发送过我想要');
+        return;
+      }
+      const intent = { id: uid('i'), productId: product.id, buyerId: user.id, status: 'pending', createdAt: Date.now() };
+      state.intents.push(intent);
+      state.chats.push({ id: uid('m'), productId: product.id, from: user.id, to: product.sellerId, text: '你好，我想要这个商品，可以聊一下吗？', createdAt: Date.now() });
+      saveState();
+      closeProductSheet();
+      renderAll();
+      showToast('已发送我想要');
+    }
+
+    function publishProduct() {
+      const user = currentUser();
+      if (!user) {
+        openLogin();
+        return;
+      }
+      const title = document.getElementById('title').value.trim();
+      const category = document.getElementById('category').value;
+      const campusText = document.getElementById('campus').value;
+      const location = document.getElementById('place').value.trim();
+      const price = Number(document.getElementById('price').value || 0);
+      const desc = document.getElementById('desc').value.trim();
+      if (!title || !location || !(price > 0) || !desc) {
+        showToast('请补全标题、地点、价格和描述');
+        return;
+      }
+      if (postMode === 'task' || category.includes('互助')) {
+        state.tasks = state.tasks || [];
+        state.tasks.push({
+          id: uid('t'),
+          title,
+          campus: campusText.includes('平乐园') ? 'pingleyuan' : 'zhonglan',
+          campusText,
+          reward: price,
+          location,
+          desc,
+          status: 'open',
+          publisherId: user.id,
+          createdAt: Date.now()
+        });
+        saveState();
+        postForm.reset();
+        resetPhotoUpload();
+        renderAll();
+        switchTab('home');
+        showToast('互助任务已发布');
+        return;
+      }
+      const visual = category.includes('教材')
+        ? { imgClass: 'img-book', symbol: '书' }
+        : category.includes('数码')
+          ? { imgClass: 'img-phone', symbol: '数' }
+          : category.includes('生活')
+            ? { imgClass: 'img-lamp', symbol: '物' }
+            : category.includes('服饰')
+              ? { imgClass: 'img-clothes', symbol: '衣' }
+              : category.includes('运动')
+                ? { imgClass: 'img-ball', symbol: '球' }
+                : { imgClass: 'img-guitar', symbol: '琴' };
+      state.products.push({
+        id: uid('p'),
+        title,
+        category,
+        campus: campusText.includes('平乐园') ? 'pingleyuan' : 'zhonglan',
+        campusText,
+        price,
+        location,
+        desc,
+        status: 'available',
+        sellerId: user.id,
+        sellerName: user.name,
+        createdAt: Date.now(),
+        image: uploadedImageData,
+        ...visual
+      });
+      saveState();
+      postForm.reset();
+      resetPhotoUpload();
+      renderAll();
+      switchTab('home');
+      showToast('发布成功');
+    }
+
+    function setPostMode(mode) {
+      postMode = mode;
+      postProductTab.classList.toggle('active', mode === 'product');
+      postTaskTab.classList.toggle('active', mode === 'task');
+      const category = document.getElementById('category');
+      if (mode === 'task') {
+        category.value = '互助兼职';
+        priceLabel.textContent = '报酬';
+        photoUploadText.textContent = '互助任务可不添加图片';
+      } else {
+        if (category.value === '互助兼职') category.value = '教材资料';
+        priceLabel.textContent = '价格';
+        photoUploadText.textContent = uploadedImageData ? '已添加商品图片' : '添加商品图片';
+      }
+    }
+
+    function resetPhotoUpload() {
+      uploadedImageData = '';
+      photoInput.value = '';
+      photoPreview.removeAttribute('src');
+      photoUpload.classList.remove('has-image');
+      photoUploadText.textContent = postMode === 'task' ? '互助任务可不添加图片' : '添加商品图片';
+    }
+
+    function acceptIntent(intentId) {
+      const intent = state.intents.find((item) => item.id === intentId);
+      const product = state.products.find((item) => item.id === intent?.productId);
+      if (!intent || !product || product.status !== 'available') return;
+      product.status = 'trading';
+      product.buyerId = intent.buyerId;
+      intent.status = 'accepted';
+      state.chats.push({ id: uid('m'), productId: product.id, from: product.sellerId, to: intent.buyerId, text: '我接受你的我想要了，我们可以约线下面交。', createdAt: Date.now() });
+      saveState();
+      renderAll();
+      showToast('已接受，商品进入交易中');
+    }
+
+    function rejectIntent(intentId) {
+      const intent = state.intents.find((item) => item.id === intentId);
+      if (!intent) return;
+      intent.status = 'rejected';
+      saveState();
+      renderAll();
+      showToast('已拒绝');
+    }
+
+    function cancelTrade(productId) {
+      const product = state.products.find((item) => item.id === productId);
+      if (!product) return;
+      const accepted = state.intents.find((item) => item.productId === product.id && item.status === 'accepted');
+      if (accepted) accepted.status = 'canceled';
+      product.status = 'available';
+      delete product.buyerId;
+      saveState();
+      renderAll();
+      showToast('已取消交易，商品恢复在售');
+    }
+
+    function markSold(productId) {
+      const product = state.products.find((item) => item.id === productId);
+      if (!product) return;
+      const accepted = state.intents.find((item) => item.productId === product.id && item.status === 'accepted');
+      if (accepted) accepted.status = 'sold';
+      product.status = 'sold';
+      saveState();
+      renderAll();
+      showToast('已确认售出，商品自动下架');
+    }
+
+    function renderChatProductBar(product, peerId) {
+      const user = currentUser();
+      const intent = state.intents.find((item) =>
+        item.productId === product.id &&
+        (item.buyerId === peerId || item.buyerId === user?.id)
+      );
+      const status = conversationStatus(intent, product, user?.id);
+      let actions = '';
+      if (user?.id === product.sellerId && intent?.status === 'pending' && product.status === 'available') {
+        actions = `
+          <div class="chat-product-actions">
+            <button class="mini-btn danger" data-action="reject" data-intent-id="${intent.id}">拒绝</button>
+            <button class="mini-btn primary" data-action="accept" data-intent-id="${intent.id}">接受</button>
+          </div>
+        `;
+      } else if (user?.id === product.sellerId && product.status === 'trading' && product.buyerId === peerId) {
+        actions = `
+          <div class="chat-product-actions">
+            <button class="mini-btn danger" data-action="cancel-trade" data-product-id="${product.id}">取消交易</button>
+            <button class="mini-btn primary" data-action="sold" data-product-id="${product.id}">确认售出</button>
+          </div>
+        `;
+      }
+      chatProductBar.innerHTML = `
+        ${productThumb(product, 'chat-product-thumb')}
+        <div class="chat-product-copy">
+          <strong>${escapeHtml(product.title)}</strong>
+          <span>¥${escapeHtml(product.price)} · ${escapeHtml(product.campusText)} · <b class="status-badge ${status.tone}">${escapeHtml(status.text)}</b></span>
+          ${actions}
+        </div>
+      `;
+    }
+
+    function openChat(productId, peerId) {
+      const user = currentUser();
+      const product = state.products.find((item) => item.id === productId);
+      if (!user || !product || !peerId) {
+        openLogin();
+        return;
+      }
+      activeChat = { productId, peerId };
+      chatTitle.textContent = state.users[peerId]?.name || peerId;
+      chatSubTitle.textContent = product.sellerId === user.id ? '买家咨询中' : '和卖家沟通面交';
+      renderChatProductBar(product, peerId);
+      renderChat();
+      switchTab('chat');
+    }
+
+    function renderChat() {
+      const user = currentUser();
+      if (!user || !activeChat) return;
+      const product = state.products.find((item) => item.id === activeChat.productId);
+      if (product) renderChatProductBar(product, activeChat.peerId);
+      const messages = state.chats.filter((message) =>
+        message.productId === activeChat.productId &&
+        ((message.from === user.id && message.to === activeChat.peerId) || (message.from === activeChat.peerId && message.to === user.id))
+      ).sort((a, b) => a.createdAt - b.createdAt);
+      chatLog.innerHTML = messages.length
+        ? messages.map((message, index) => `
+            ${index === 0 ? `<span class="chat-time">${formatDate(message.createdAt)}</span>` : ''}
+            <div class="chat-bubble ${message.from === user.id ? 'mine' : ''}">${escapeHtml(message.text)}</div>
+          `).join('')
+        : '<div class="empty-state">还没有聊天记录，先发一句约个时间吧。</div>';
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    function sendChatMessage() {
+      const user = currentUser();
+      const text = chatInput.value.trim();
+      if (!user || !activeChat || !text) return;
+      state.chats.push({ id: uid('m'), productId: activeChat.productId, from: user.id, to: activeChat.peerId, text, createdAt: Date.now() });
+      chatInput.value = '';
+      saveState();
+      renderChat();
+      renderMessages();
+    }
+
+    navButtons.forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
+    document.querySelectorAll('[data-toast]').forEach((item) => {
+      item.addEventListener('click', (event) => {
+        if (item.classList.contains('product-card')) return;
+        if (item.classList.contains('chip') && item.dataset.filter) return;
+        if (item.classList.contains('chip') && item.dataset.module) return;
+        event.preventDefault();
+        showToast(item.dataset.toast);
+      });
+    });
+    document.querySelectorAll('[data-module]').forEach((button) => {
+      button.addEventListener('click', () => switchContentModule(button.dataset.module));
+    });
+    document.querySelectorAll('.chip[data-filter]').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.chip[data-filter]').forEach((item) => item.classList.remove('active'));
+        chip.classList.add('active');
+        currentFilter = chip.dataset.filter;
+        renderProducts();
+        renderTasks();
+      });
+    });
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', () => {
+      currentSearch = searchInput.value.trim().toLowerCase();
+      renderProducts();
+      renderTasks();
+    });
+    document.querySelectorAll('.quick-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        const text = item.textContent.trim();
+        currentCategory = text === '教材' ? '教材资料' : text === '数码' ? '数码电子' : text === '生活' ? '生活用品' : text === '服饰' ? '服饰美妆' : text === '运动' ? '运动户外' : text === '乐器' ? '乐器文具' : 'all';
+        currentModule = 'products';
+        syncContentModule();
+        renderProducts();
+        showToast(`已切换到${text}`);
+      });
+    });
+    productList.addEventListener('click', (event) => {
+      const card = event.target.closest('.product-card');
+      if (card) openProduct(card.dataset.productId);
+    });
+    postProductTab.addEventListener('click', () => setPostMode('product'));
+    postTaskTab.addEventListener('click', () => setPostMode('task'));
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files && photoInput.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showToast('请选择图片文件');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('图片不能超过 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        uploadedImageData = String(reader.result);
+        photoPreview.src = uploadedImageData;
+        photoUpload.classList.add('has-image');
+        photoUploadText.textContent = '已添加图片';
+      };
+      reader.readAsDataURL(file);
+    });
+    postForm.querySelector('.primary-btn').addEventListener('click', publishProduct);
+    wantButton.addEventListener('click', requestWant);
+    closeSheet.addEventListener('click', closeProductSheet);
+    sheetMask.addEventListener('click', (event) => {
+      if (event.target === sheetMask) closeProductSheet();
+    });
+    avatarLogin.addEventListener('click', openLogin);
+    cancelLogin.addEventListener('click', closeLogin);
+    loginMask.addEventListener('click', (event) => {
+      if (event.target === loginMask) closeLogin();
+    });
+    confirmLogin.addEventListener('click', () => {
+      const id = document.getElementById('studentId').value.trim();
+      if (!id) {
+        showToast('请输入学号');
+        return;
+      }
+      if (!state.users[id]) {
+        state.users[id] = { id, name: `同学${id.slice(-4)}`, campus: '平乐园校区' };
+      }
+      state.currentUserId = id;
+      saveState();
+      closeLogin();
+      renderAll();
+      showToast('登录成功');
+    });
+    messageList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      const action = button.dataset.action;
+      if (action === 'open-chat') openChat(button.dataset.productId, button.dataset.peerId);
+    });
+    chatProductBar.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      const action = button.dataset.action;
+      if (action === 'accept') acceptIntent(button.dataset.intentId);
+      if (action === 'reject') rejectIntent(button.dataset.intentId);
+      if (action === 'cancel-trade') cancelTrade(button.dataset.productId);
+      if (action === 'sold') markSold(button.dataset.productId);
+      renderChat();
+    });
+    profileList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      const action = button.dataset.action;
+      if (action === 'logout') {
+        state.currentUserId = '';
+        saveState();
+        renderAll();
+        showToast('已退出登录');
+      } else if (action === 'down' || action === 'up') {
+        const product = state.products.find((item) => item.id === button.dataset.id);
+        if (!product) return;
+        product.status = action === 'down' ? 'down' : 'available';
+        saveState();
+        renderAll();
+        showToast(action === 'down' ? '商品已下架，前台不再展示' : '商品已重新上架');
+      } else if (action === 'del') {
+        const id = button.dataset.id;
+        state.products = state.products.filter((item) => item.id !== id);
+        state.intents = state.intents.filter((item) => item.productId !== id);
+        state.chats = state.chats.filter((item) => item.productId !== id);
+        saveState();
+        renderAll();
+        showToast('商品已删除');
+      }
+    });
+    backToMessages.addEventListener('click', () => switchTab('messages'));
+    document.getElementById('listBack').addEventListener('click', () => switchTab('home'));
+    document.querySelectorAll('.list-sorts .chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.list-sorts .chip').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentSort = btn.dataset.sort;
+        renderList();
+      });
+    });
+    taskList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-task-action]');
+      if (!button) return;
+      const action = button.dataset.taskAction;
+      const task = state.tasks.find((item) => item.id === button.dataset.id);
+      if (!task) return;
+      const user = currentUser();
+      if (action === 'take') {
+        if (!user) { openLogin(); return; }
+        if (user.id === task.publisherId) { showToast('不能接自己发布的任务'); return; }
+        task.status = 'in_progress';
+        task.takerId = user.id;
+        saveState();
+        renderTasks();
+        updateMessageBadge();
+        showToast('接单成功，等待发布者确认');
+      } else if (action === 'done') {
+        task.status = 'done';
+        saveState();
+        renderTasks();
+        updateMessageBadge();
+        showToast('任务已完成，感谢参与');
+      } else if (action === 'cancel') {
+        task.status = 'cancelled';
+        task.takerId = '';
+        saveState();
+        renderTasks();
+        updateMessageBadge();
+        showToast('任务已取消');
+      }
+    });
+    document.getElementById('listProducts').addEventListener('click', (event) => {
+      const card = event.target.closest('.product-card');
+      if (card) openProduct(card.dataset.productId);
+    });
+    sendChat.addEventListener('click', sendChatMessage);
+    chatInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') sendChatMessage();
+    });
+
+    renderAll();
+    hydrateFromServer();
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
