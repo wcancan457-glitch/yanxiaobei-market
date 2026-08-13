@@ -46,6 +46,8 @@ jobs:
             apt-get update
             DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync
 
+            DOMAIN=yanxiaobei.wangpangxie.top
+
             mkdir -p "$APP_DIR/data"
             rsync -a --delete --exclude 'data/' "$RELEASE_DIR/" "$APP_DIR/"
             chown -R root:root "$APP_DIR"
@@ -81,7 +83,7 @@ jobs:
             server {
                 listen 80 default_server;
                 listen [::]:80 default_server;
-                server_name _;
+                server_name yanxiaobei.wangpangxie.top _;
 
                 client_max_body_size 6m;
 
@@ -108,6 +110,9 @@ jobs:
 
             curl --fail --silent --show-error http://127.0.0.1:5177/ > /dev/null
             curl --fail --silent --show-error http://127.0.0.1/api/state > /dev/null
+            PUBLIC_IP="$(curl --4 --fail --silent --max-time 10 https://api.ipify.org || true)"
+            echo "Public URL (after DNS): http://${DOMAIN}/"
+            echo "Server public IPv4: ${PUBLIC_IP:-unavailable}"
             systemctl --no-pager --full status yanxiaobei-market | head -n 15
 
       - name: Verify the public site
