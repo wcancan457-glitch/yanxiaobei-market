@@ -66,7 +66,6 @@ jobs:
             WorkingDirectory=/opt/yanxiaobei-market
             Environment=NODE_ENV=production
             Environment=PORT=5177
-            Environment=APP_TOKEN=yxb-mvp-2026
             ExecStart=/usr/bin/node /opt/yanxiaobei-market/server.js
             Restart=always
             RestartSec=3

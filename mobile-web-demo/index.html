@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
@@ -985,6 +985,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 .login-dialog h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; font-family: var(--font-display); font-weight: 400; }
 .login-dialog p { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .login-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.login-switch { display: block; width: 100%; margin-top: 12px; border: 0; background: transparent; color: var(--blue); font-size: 13px; cursor: pointer; }
 
 .sheet {
   width: min(100vw, 430px);
@@ -1376,22 +1377,23 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 
   <div class="sheet-mask login-mask" id="loginMask" aria-hidden="true">
     <section class="login-dialog" role="dialog" aria-modal="true" aria-label="学号密码登录">
-      <h2>学号登录</h2>
-      <p>登录后可以发布商品、联系卖家、查看我想要和交易状态。</p>
+      <h2 id="loginTitle">学号账号登录</h2>
+      <p id="loginDescription">登录后可以发布商品、联系卖家、查看我想要和交易状态。</p>
       <div class="form-panel" style="padding: 0; border: 0; box-shadow: none;">
         <div class="field">
           <label for="studentId">学号</label>
-          <input id="studentId" value="20231234" inputmode="numeric">
+          <input id="studentId" value="" inputmode="numeric" autocomplete="username">
         </div>
         <div class="field">
           <label for="studentPassword">密码</label>
-          <input id="studentPassword" type="password" value="123456">
+          <input id="studentPassword" type="password" value="" autocomplete="current-password">
         </div>
       </div>
       <div class="login-actions">
         <button class="secondary-btn" id="cancelLogin" type="button">取消</button>
         <button class="primary-btn" id="confirmLogin" type="button">登录</button>
       </div>
+      <button class="login-switch" id="switchLoginMode" type="button">没有账号？先注册</button>
     </section>
   </div>
 
@@ -1431,6 +1433,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const loginMask = document.getElementById('loginMask');
     const cancelLogin = document.getElementById('cancelLogin');
     const confirmLogin = document.getElementById('confirmLogin');
+    const loginTitle = document.getElementById('loginTitle');
+    const loginDescription = document.getElementById('loginDescription');
+    const switchLoginMode = document.getElementById('switchLoginMode');
+    const studentPassword = document.getElementById('studentPassword');
     const profileName = document.getElementById('profileName');
     const profileMeta = document.getElementById('profileMeta');
     const profileLoginPill = document.getElementById('profileLoginPill');
@@ -1452,6 +1458,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     let currentSearch = '';
     let postMode = 'product';
     let uploadedImageData = '';
+    let loginMode = 'login';
 
     const seedState = {
       currentUserId: '',
@@ -1624,12 +1631,13 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     }
 
     function saveState() {
+      const localState = { ...state, currentUserId: '' };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      if (USE_API) {
+      if (USE_API && state.currentUserId) {
         fetch('/api/state', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-app-token': 'yxb-mvp-2026' },
-          body: JSON.stringify(state)
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(localState)
         }).catch(() => showToast('后端保存失败，已暂存本地'));
       }
     }
@@ -1641,12 +1649,25 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         if (!res.ok) return;
         const remote = await res.json();
         if (remote && Array.isArray(remote.products)) {
-          state = { ...structuredClone(seedState), ...remote };
+          state = { ...structuredClone(seedState), ...remote, currentUserId: '' };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
           renderAll();
         }
       } catch {
         showToast('后端连接失败，使用本地数据');
+      }
+    }
+
+    async function hydrateAuth() {
+      if (!USE_API) return;
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        state.currentUserId = data.authenticated && data.user ? data.user.id : '';
+        if (data.user) state.users[data.user.id] = data.user;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch {
+        state.currentUserId = '';
       }
     }
 
@@ -1713,7 +1734,20 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       showToast(module === 'tasks' ? '已切换到互助任务' : '已切换到热门闲置');
     }
 
+    function setLoginMode(mode) {
+      loginMode = mode;
+      const registering = mode === 'register';
+      loginTitle.textContent = registering ? '注册学号账号' : '学号账号登录';
+      loginDescription.textContent = registering
+        ? '注册后即可登录。当前版本使用平台账号认证，不会连接学校教务系统。'
+        : '登录后可以发布商品、联系卖家、查看我想要和交易状态。';
+      confirmLogin.textContent = registering ? '注册并登录' : '登录';
+      switchLoginMode.textContent = registering ? '已有账号？返回登录' : '没有账号？先注册';
+      studentPassword.autocomplete = registering ? 'new-password' : 'current-password';
+    }
+
     function openLogin() {
+      setLoginMode('login');
       loginMask.classList.add('open');
       loginMask.setAttribute('aria-hidden', 'false');
     }
@@ -2397,20 +2431,42 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     loginMask.addEventListener('click', (event) => {
       if (event.target === loginMask) closeLogin();
     });
-    confirmLogin.addEventListener('click', () => {
+    switchLoginMode.addEventListener('click', () => {
+      setLoginMode(loginMode === 'login' ? 'register' : 'login');
+    });
+
+    confirmLogin.addEventListener('click', async () => {
       const id = document.getElementById('studentId').value.trim();
+      const password = studentPassword.value;
       if (!id) {
         showToast('请输入学号');
         return;
       }
-      if (!state.users[id]) {
-        state.users[id] = { id, name: `同学${id.slice(-4)}`, campus: '平乐园校区' };
+      if (!password) {
+        showToast('请输入密码');
+        return;
       }
-      state.currentUserId = id;
-      saveState();
-      closeLogin();
-      renderAll();
-      showToast('登录成功');
+      confirmLogin.disabled = true;
+      try {
+        const endpoint = loginMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentId: id, password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || '操作失败，请稍后重试');
+        state.currentUserId = data.user.id;
+        state.users[data.user.id] = data.user;
+        saveState();
+        closeLogin();
+        renderAll();
+        showToast(loginMode === 'register' ? '注册成功，已登录' : '登录成功');
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        confirmLogin.disabled = false;
+      }
     });
     messageList.addEventListener('click', (event) => {
       const button = event.target.closest('[data-action]');
@@ -2433,6 +2489,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       if (!button) return;
       const action = button.dataset.action;
       if (action === 'logout') {
+        fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
         state.currentUserId = '';
         saveState();
         renderAll();
@@ -2505,7 +2562,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     });
 
     renderAll();
-    hydrateFromServer();
+    (async () => {
+      await hydrateFromServer();
+      await hydrateAuth();
+      renderAll();
+    })();
   </script>
 </body>
 </html>
