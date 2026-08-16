@@ -110,8 +110,14 @@ function sessionUser(req) {
   return authStore().users[session.userId] || null;
 }
 
-function setSessionCookie(res, token, maxAge = SESSION_TTL_MS / 1000) {
-  res.setHeader('Set-Cookie', SESSION_COOKIE + '=' + encodeURIComponent(token) + '; Max-Age=' + maxAge + '; Path=/; HttpOnly; SameSite=Lax');
+function isSecureRequest(req) {
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  return Boolean(req.socket.encrypted) || forwardedProto === 'https';
+}
+
+function setSessionCookie(req, res, token, maxAge = SESSION_TTL_MS / 1000) {
+  const secure = isSecureRequest(req) ? '; Secure' : '';
+  res.setHeader('Set-Cookie', SESSION_COOKIE + '=' + encodeURIComponent(token) + '; Max-Age=' + maxAge + '; Path=/; HttpOnly; SameSite=Lax' + secure);
 }
 
 function createSession(userId) {
@@ -185,7 +191,7 @@ const server = http.createServer(async (req, res) => {
       state.users[id] = { id, name: user.name, campus: user.campus };
       writeJson(dbFile, state);
 
-      setSessionCookie(res, createSession(id));
+      setSessionCookie(req, res, createSession(id));
       send(res, 201, JSON.stringify({ ok: true, user: publicUser(user) }));
     } catch {
       send(res, 400, JSON.stringify({ ok: false, error: '注册请求格式不正确' }));
@@ -203,7 +209,7 @@ const server = http.createServer(async (req, res) => {
         send(res, 401, JSON.stringify({ ok: false, error: '学号或密码错误' }));
         return;
       }
-      setSessionCookie(res, createSession(id));
+      setSessionCookie(req, res, createSession(id));
       send(res, 200, JSON.stringify({ ok: true, user: publicUser(user) }));
     } catch {
       send(res, 400, JSON.stringify({ ok: false, error: '登录请求格式不正确' }));
@@ -220,7 +226,7 @@ const server = http.createServer(async (req, res) => {
   if (requestUrl.pathname === '/api/auth/logout' && req.method === 'POST') {
     const token = parseCookies(req)[SESSION_COOKIE];
     if (token) sessions.delete(token);
-    setSessionCookie(res, '', 0);
+    setSessionCookie(req, res, '', 0);
     send(res, 200, JSON.stringify({ ok: true }));
     return;
   }

@@ -44,7 +44,7 @@ jobs:
             RELEASE_DIR=/tmp/yanxiaobei-release/mobile-web-demo
 
             apt-get update
-            DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync
+            DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync snapd
 
             DOMAIN=yanxiaobei.wangpangxie.top
 
@@ -109,10 +109,34 @@ jobs:
 
             curl --fail --silent --show-error http://127.0.0.1:5177/ > /dev/null
             curl --fail --silent --show-error http://127.0.0.1/api/state > /dev/null
+
+            # Use the current Certbot release and let its systemd timer renew the
+            # certificate automatically. Port 80 remains available for ACME checks.
+            systemctl enable --now snapd.socket
+            snap wait system seed.loaded
+            snap install core || snap refresh core
+            snap install --classic certbot || snap refresh certbot
+            ln -sfn /snap/bin/certbot /usr/local/bin/certbot
+
+            certbot --nginx \
+              --non-interactive \
+              --agree-tos \
+              --no-eff-email \
+              --register-unsafely-without-email \
+              --redirect \
+              --keep-until-expiring \
+              --domain "$DOMAIN"
+
+            nginx -t
+            systemctl reload nginx
+            curl --fail --silent --show-error --max-time 20 \
+              --resolve "$DOMAIN:443:127.0.0.1" \
+              "https://${DOMAIN}/" > /dev/null
+
             PUBLIC_IP="$(curl --4 --fail --silent --max-time 10 https://api.ipify.org || true)"
-            echo "Public URL (after DNS): http://${DOMAIN}/"
+            echo "Public URL: https://${DOMAIN}/"
             echo "Server public IPv4: ${PUBLIC_IP:-unavailable}"
             systemctl --no-pager --full status yanxiaobei-market | head -n 15
 
       - name: Verify the public site
-        run: curl --fail --silent --show-error --max-time 20 "http://${{ secrets.SERVER_HOST }}/" > /dev/null
+        run: curl --fail --silent --show-error --max-time 20 "https://yanxiaobei.wangpangxie.top/" > /dev/null
