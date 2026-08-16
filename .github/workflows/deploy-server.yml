@@ -29,6 +29,8 @@ jobs:
           command_timeout: 5m
 
       - name: Install and start the application
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -37,6 +39,7 @@ jobs:
           port: 22
           timeout: 60s
           command_timeout: 8m
+          envs: DATABASE_URL
           script: |
             set -eu
 
@@ -44,15 +47,34 @@ jobs:
             RELEASE_DIR=/tmp/yanxiaobei-release/mobile-web-demo
 
             apt-get update
-            DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync snapd
+            DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync snapd npm
 
             DOMAIN=yanxiaobei.wangpangxie.top
 
+            if [ -z "${DATABASE_URL:-}" ]; then
+              echo "Missing GitHub Actions secret: DATABASE_URL" >&2
+              exit 1
+            fi
+
             mkdir -p "$APP_DIR/data"
+            cd "$RELEASE_DIR"
+            npm ci --omit=dev
+            npm run check
+            npm run db:migrate
+            if [ ! -f "$APP_DIR/data/.postgres-migrated" ]; then
+              DATA_DIR="$APP_DIR/data" npm run db:import-json
+              touch "$APP_DIR/data/.postgres-migrated"
+            fi
+
             rsync -a --delete --exclude 'data/' "$RELEASE_DIR/" "$APP_DIR/"
             chown -R root:root "$APP_DIR"
             chown -R www-data:www-data "$APP_DIR/data"
             chmod 750 "$APP_DIR/data"
+
+            umask 077
+            printf 'DATABASE_URL=%s\n' "$DATABASE_URL" > /etc/yanxiaobei-market.env
+            chown root:root /etc/yanxiaobei-market.env
+            chmod 600 /etc/yanxiaobei-market.env
 
             cat > /etc/systemd/system/yanxiaobei-market.service <<'SERVICE'
             [Unit]
@@ -66,6 +88,8 @@ jobs:
             WorkingDirectory=/opt/yanxiaobei-market
             Environment=NODE_ENV=production
             Environment=PORT=5177
+            Environment=DATA_DIR=/opt/yanxiaobei-market/data
+            EnvironmentFile=/etc/yanxiaobei-market.env
             ExecStart=/usr/bin/node /opt/yanxiaobei-market/server.js
             Restart=always
             RestartSec=3
@@ -108,7 +132,8 @@ jobs:
             systemctl reload nginx
 
             curl --fail --silent --show-error http://127.0.0.1:5177/ > /dev/null
-            curl --fail --silent --show-error http://127.0.0.1/api/state > /dev/null
+            curl --fail --silent --show-error http://127.0.0.1/api/health > /dev/null
+            curl --fail --silent --show-error http://127.0.0.1/api/bootstrap > /dev/null
 
             # Use the current Certbot release and let its systemd timer renew the
             # certificate automatically. Port 80 remains available for ACME checks.

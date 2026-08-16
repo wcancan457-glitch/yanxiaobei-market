@@ -12,8 +12,13 @@ feishu_doc_authorization_qr.png
 # 交接文档（含服务器凭据，绝不提交）
 HANDOFF_*.md
 
-# 运行数据（服务端持久化，不提交）
-mobile-web-demo/data/db.json
+# 运行数据和本地数据库配置（绝不提交）
+mobile-web-demo/data/
+.env
+.env.*
+!.env.example
+*.dump
+*.dump.enc
 
 # Node
 node_modules/

@@ -1,0 +1,19 @@
+{
+  "name": "yanxiaobei-market",
+  "version": "1.0.0",
+  "private": true,
+  "description": "燕小北校园二手交易平台",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check database.js && node --check scripts/run-migrations.js && node --check scripts/migrate-json-to-postgres.js",
+    "db:migrate": "node scripts/run-migrations.js",
+    "db:import-json": "node scripts/migrate-json-to-postgres.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "pg": "^8.23.0"
+  }
+}

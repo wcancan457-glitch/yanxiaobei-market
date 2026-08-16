@@ -1631,43 +1631,34 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     }
 
     function saveState() {
-      const localState = { ...state, currentUserId: '' };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      if (USE_API && state.currentUserId) {
-        fetch('/api/state', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(localState)
-        }).catch(() => showToast('后端保存失败，已暂存本地'));
-      }
+    }
+
+    async function apiRequest(url, options = {}) {
+      const res = await fetch(url, {
+        ...options,
+        headers: options.body
+          ? { 'Content-Type': 'application/json', ...(options.headers || {}) }
+          : options.headers
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '操作失败，请稍后重试');
+      return data;
     }
 
     async function hydrateFromServer() {
       if (!USE_API) return;
       try {
-        const res = await fetch('/api/state');
-        if (!res.ok) return;
-        const remote = await res.json();
+        const remote = await apiRequest('/api/bootstrap');
         if (remote && Array.isArray(remote.products)) {
-          state = { ...structuredClone(seedState), ...remote, currentUserId: '' };
+          const currentUserId = remote.currentUser?.id || '';
+          state = { ...structuredClone(seedState), ...remote, currentUserId };
+          if (remote.currentUser) state.users[currentUserId] = remote.currentUser;
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
           renderAll();
         }
       } catch {
         showToast('后端连接失败，使用本地数据');
-      }
-    }
-
-    async function hydrateAuth() {
-      if (!USE_API) return;
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        state.currentUserId = data.authenticated && data.user ? data.user.id : '';
-        if (data.user) state.users[data.user.id] = data.user;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch {
-        state.currentUserId = '';
       }
     }
 
@@ -2017,7 +2008,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       }).length;
 
       profileName.textContent = user.name;
-      profileMeta.textContent = `${user.id} · ${user.campus}`;
+      profileMeta.textContent = `${user.studentId || user.id} · ${user.campus}`;
       profileLoginPill.innerHTML = '<i class="login-dot"></i> 学号密码已登录';
       statPost.textContent = String(myProducts.length);
       statSold.textContent = String(sold);
@@ -2107,7 +2098,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       sheetMask.setAttribute('aria-hidden', 'false');
     }
 
-    function requestWant() {
+    async function requestWant() {
       const user = currentUser();
       if (!user) {
         openLogin();
@@ -2128,16 +2119,20 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         showToast('你已经发送过我想要');
         return;
       }
-      const intent = { id: uid('i'), productId: product.id, buyerId: user.id, status: 'pending', createdAt: Date.now() };
-      state.intents.push(intent);
-      state.chats.push({ id: uid('m'), productId: product.id, from: user.id, to: product.sellerId, text: '你好，我想要这个商品，可以聊一下吗？', createdAt: Date.now() });
-      saveState();
-      closeProductSheet();
-      renderAll();
-      showToast('已发送我想要');
+      try {
+        await apiRequest('/api/intents', {
+          method: 'POST',
+          body: JSON.stringify({ productId: product.id })
+        });
+        closeProductSheet();
+        await hydrateFromServer();
+        showToast('已发送我想要');
+      } catch (error) {
+        showToast(error.message);
+      }
     }
 
-    function publishProduct() {
+    async function publishProduct() {
       const user = currentUser();
       if (!user) {
         openLogin();
@@ -2154,25 +2149,26 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         return;
       }
       if (postMode === 'task' || category.includes('互助')) {
-        state.tasks = state.tasks || [];
-        state.tasks.push({
-          id: uid('t'),
-          title,
-          campus: campusText.includes('平乐园') ? 'pingleyuan' : 'zhonglan',
-          campusText,
-          reward: price,
-          location,
-          desc,
-          status: 'open',
-          publisherId: user.id,
-          createdAt: Date.now()
-        });
-        saveState();
-        postForm.reset();
-        resetPhotoUpload();
-        renderAll();
-        switchTab('home');
-        showToast('互助任务已发布');
+        try {
+          await apiRequest('/api/tasks', {
+            method: 'POST',
+            body: JSON.stringify({
+              title,
+              campus: campusText.includes('平乐园') ? 'pingleyuan' : 'zhonglan',
+              campusText,
+              reward: price,
+              location,
+              desc
+            })
+          });
+          postForm.reset();
+          resetPhotoUpload();
+          await hydrateFromServer();
+          switchTab('home');
+          showToast('互助任务已发布');
+        } catch (error) {
+          showToast(error.message);
+        }
         return;
       }
       const visual = category.includes('教材')
@@ -2186,28 +2182,29 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
               : category.includes('运动')
                 ? { imgClass: 'img-ball', symbol: '球' }
                 : { imgClass: 'img-guitar', symbol: '琴' };
-      state.products.push({
-        id: uid('p'),
-        title,
-        category,
-        campus: campusText.includes('平乐园') ? 'pingleyuan' : 'zhonglan',
-        campusText,
-        price,
-        location,
-        desc,
-        status: 'available',
-        sellerId: user.id,
-        sellerName: user.name,
-        createdAt: Date.now(),
-        image: uploadedImageData,
-        ...visual
-      });
-      saveState();
-      postForm.reset();
-      resetPhotoUpload();
-      renderAll();
-      switchTab('home');
-      showToast('发布成功');
+      try {
+        await apiRequest('/api/products', {
+          method: 'POST',
+          body: JSON.stringify({
+            title,
+            category,
+            campus: campusText.includes('平乐园') ? 'pingleyuan' : 'zhonglan',
+            campusText,
+            price,
+            location,
+            desc,
+            image: uploadedImageData,
+            ...visual
+          })
+        });
+        postForm.reset();
+        resetPhotoUpload();
+        await hydrateFromServer();
+        switchTab('home');
+        showToast('发布成功');
+      } catch (error) {
+        showToast(error.message);
+      }
     }
 
     function setPostMode(mode) {
@@ -2234,49 +2231,65 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       photoUploadText.textContent = postMode === 'task' ? '互助任务可不添加图片' : '添加商品图片';
     }
 
-    function acceptIntent(intentId) {
+    async function acceptIntent(intentId) {
       const intent = state.intents.find((item) => item.id === intentId);
       const product = state.products.find((item) => item.id === intent?.productId);
       if (!intent || !product || product.status !== 'available') return;
-      product.status = 'trading';
-      product.buyerId = intent.buyerId;
-      intent.status = 'accepted';
-      state.chats.push({ id: uid('m'), productId: product.id, from: product.sellerId, to: intent.buyerId, text: '我接受你的我想要了，我们可以约线下面交。', createdAt: Date.now() });
-      saveState();
-      renderAll();
-      showToast('已接受，商品进入交易中');
+      try {
+        await apiRequest(`/api/intents/${encodeURIComponent(intentId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ action: 'accept' })
+        });
+        await hydrateFromServer();
+        showToast('已接受，商品进入交易中');
+      } catch (error) {
+        showToast(error.message);
+      }
     }
 
-    function rejectIntent(intentId) {
+    async function rejectIntent(intentId) {
       const intent = state.intents.find((item) => item.id === intentId);
       if (!intent) return;
-      intent.status = 'rejected';
-      saveState();
-      renderAll();
-      showToast('已拒绝');
+      try {
+        await apiRequest(`/api/intents/${encodeURIComponent(intentId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ action: 'reject' })
+        });
+        await hydrateFromServer();
+        showToast('已拒绝');
+      } catch (error) {
+        showToast(error.message);
+      }
     }
 
-    function cancelTrade(productId) {
+    async function cancelTrade(productId) {
       const product = state.products.find((item) => item.id === productId);
       if (!product) return;
-      const accepted = state.intents.find((item) => item.productId === product.id && item.status === 'accepted');
-      if (accepted) accepted.status = 'canceled';
-      product.status = 'available';
-      delete product.buyerId;
-      saveState();
-      renderAll();
-      showToast('已取消交易，商品恢复在售');
+      try {
+        await apiRequest(`/api/products/${encodeURIComponent(productId)}/trade`, {
+          method: 'PATCH',
+          body: JSON.stringify({ action: 'cancel' })
+        });
+        await hydrateFromServer();
+        showToast('已取消交易，商品恢复在售');
+      } catch (error) {
+        showToast(error.message);
+      }
     }
 
-    function markSold(productId) {
+    async function markSold(productId) {
       const product = state.products.find((item) => item.id === productId);
       if (!product) return;
-      const accepted = state.intents.find((item) => item.productId === product.id && item.status === 'accepted');
-      if (accepted) accepted.status = 'sold';
-      product.status = 'sold';
-      saveState();
-      renderAll();
-      showToast('已确认售出，商品自动下架');
+      try {
+        await apiRequest(`/api/products/${encodeURIComponent(productId)}/trade`, {
+          method: 'PATCH',
+          body: JSON.stringify({ action: 'sold' })
+        });
+        await hydrateFromServer();
+        showToast('已确认售出，商品自动下架');
+      } catch (error) {
+        showToast(error.message);
+      }
     }
 
     function renderChatProductBar(product, peerId) {
@@ -2345,15 +2358,22 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       chatLog.scrollTop = chatLog.scrollHeight;
     }
 
-    function sendChatMessage() {
+    async function sendChatMessage() {
       const user = currentUser();
       const text = chatInput.value.trim();
       if (!user || !activeChat || !text) return;
-      state.chats.push({ id: uid('m'), productId: activeChat.productId, from: user.id, to: activeChat.peerId, text, createdAt: Date.now() });
-      chatInput.value = '';
-      saveState();
-      renderChat();
-      renderMessages();
+      try {
+        await apiRequest('/api/messages', {
+          method: 'POST',
+          body: JSON.stringify({ productId: activeChat.productId, peerId: activeChat.peerId, text })
+        });
+        chatInput.value = '';
+        await hydrateFromServer();
+        renderChat();
+        renderMessages();
+      } catch (error) {
+        showToast(error.message);
+      }
     }
 
     navButtons.forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
@@ -2449,16 +2469,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       confirmLogin.disabled = true;
       try {
         const endpoint = loginMode === 'register' ? '/api/auth/register' : '/api/auth/login';
-        const res = await fetch(endpoint, {
+        await apiRequest(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ studentId: id, password })
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || '操作失败，请稍后重试');
-        state.currentUserId = data.user.id;
-        state.users[data.user.id] = data.user;
-        saveState();
+        await hydrateFromServer();
         closeLogin();
         renderAll();
         showToast(loginMode === 'register' ? '注册成功，已登录' : '登录成功');
@@ -2474,41 +2489,51 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       const action = button.dataset.action;
       if (action === 'open-chat') openChat(button.dataset.productId, button.dataset.peerId);
     });
-    chatProductBar.addEventListener('click', (event) => {
+    chatProductBar.addEventListener('click', async (event) => {
       const button = event.target.closest('[data-action]');
       if (!button) return;
       const action = button.dataset.action;
-      if (action === 'accept') acceptIntent(button.dataset.intentId);
-      if (action === 'reject') rejectIntent(button.dataset.intentId);
-      if (action === 'cancel-trade') cancelTrade(button.dataset.productId);
-      if (action === 'sold') markSold(button.dataset.productId);
+      if (action === 'accept') await acceptIntent(button.dataset.intentId);
+      if (action === 'reject') await rejectIntent(button.dataset.intentId);
+      if (action === 'cancel-trade') await cancelTrade(button.dataset.productId);
+      if (action === 'sold') await markSold(button.dataset.productId);
       renderChat();
     });
-    profileList.addEventListener('click', (event) => {
+    profileList.addEventListener('click', async (event) => {
       const button = event.target.closest('[data-action]');
       if (!button) return;
       const action = button.dataset.action;
       if (action === 'logout') {
-        fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-        state.currentUserId = '';
-        saveState();
-        renderAll();
-        showToast('已退出登录');
+        try {
+          await apiRequest('/api/auth/logout', { method: 'POST' });
+          await hydrateFromServer();
+          renderAll();
+          showToast('已退出登录');
+        } catch (error) {
+          showToast(error.message);
+        }
       } else if (action === 'down' || action === 'up') {
         const product = state.products.find((item) => item.id === button.dataset.id);
         if (!product) return;
-        product.status = action === 'down' ? 'down' : 'available';
-        saveState();
-        renderAll();
-        showToast(action === 'down' ? '商品已下架，前台不再展示' : '商品已重新上架');
+        try {
+          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: action === 'down' ? 'down' : 'available' })
+          });
+          await hydrateFromServer();
+          showToast(action === 'down' ? '商品已下架，前台不再展示' : '商品已重新上架');
+        } catch (error) {
+          showToast(error.message);
+        }
       } else if (action === 'del') {
         const id = button.dataset.id;
-        state.products = state.products.filter((item) => item.id !== id);
-        state.intents = state.intents.filter((item) => item.productId !== id);
-        state.chats = state.chats.filter((item) => item.productId !== id);
-        saveState();
-        renderAll();
-        showToast('商品已删除');
+        try {
+          await apiRequest(`/api/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
+          await hydrateFromServer();
+          showToast('商品已删除');
+        } catch (error) {
+          showToast(error.message);
+        }
       }
     });
     backToMessages.addEventListener('click', () => switchTab('messages'));
@@ -2521,7 +2546,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         renderList();
       });
     });
-    taskList.addEventListener('click', (event) => {
+    taskList.addEventListener('click', async (event) => {
       const button = event.target.closest('[data-task-action]');
       if (!button) return;
       const action = button.dataset.taskAction;
@@ -2531,25 +2556,20 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       if (action === 'take') {
         if (!user) { openLogin(); return; }
         if (user.id === task.publisherId) { showToast('不能接自己发布的任务'); return; }
-        task.status = 'in_progress';
-        task.takerId = user.id;
-        saveState();
-        renderTasks();
-        updateMessageBadge();
-        showToast('接单成功，等待发布者确认');
-      } else if (action === 'done') {
-        task.status = 'done';
-        saveState();
-        renderTasks();
-        updateMessageBadge();
-        showToast('任务已完成，感谢参与');
-      } else if (action === 'cancel') {
-        task.status = 'cancelled';
-        task.takerId = '';
-        saveState();
-        renderTasks();
-        updateMessageBadge();
-        showToast('任务已取消');
+      }
+      try {
+        await apiRequest(`/api/tasks/${encodeURIComponent(task.id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ action })
+        });
+        await hydrateFromServer();
+        showToast(action === 'take'
+          ? '接单成功，等待发布者确认'
+          : action === 'done'
+            ? '任务已完成，感谢参与'
+            : '任务已取消');
+      } catch (error) {
+        showToast(error.message);
       }
     });
     document.getElementById('listProducts').addEventListener('click', (event) => {
@@ -2564,16 +2584,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     renderAll();
     (async () => {
       await hydrateFromServer();
-      await hydrateAuth();
       renderAll();
     })();
   </script>
 </body>
 </html>
-
-
-
-
 
 
 
