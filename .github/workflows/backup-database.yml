@@ -23,10 +23,8 @@ jobs:
           test -n "$DATABASE_URL" || { echo 'Missing DATABASE_URL'; exit 1; }
           test -n "$BACKUP_PASSPHRASE" || { echo 'Missing BACKUP_PASSPHRASE'; exit 1; }
 
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client-17
+      - name: Pull PostgreSQL 17 client image
+        run: docker pull postgres:17
 
       - name: Create encrypted logical backup
         run: |
@@ -35,7 +33,14 @@ jobs:
           dump="yanxiaobei-${stamp}.dump"
           mkdir -p backups
           encrypted="backups/${dump}.enc"
-          pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges --file="$dump"
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env DATABASE_URL \
+            --env DUMP_FILE="$dump" \
+            --volume "$PWD:/work" \
+            --workdir /work \
+            postgres:17 \
+            sh -c 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges --file="$DUMP_FILE"'
           openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
             -in "$dump" -out "$encrypted" -pass env:BACKUP_PASSPHRASE
           rm -f "$dump"
