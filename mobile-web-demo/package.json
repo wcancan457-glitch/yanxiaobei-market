@@ -6,9 +6,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check database.js && node --check scripts/run-migrations.js && node --check scripts/migrate-json-to-postgres.js",
+    "check": "node --check server.js && node --check database.js && node --check scripts/run-migrations.js && node --check scripts/migrate-json-to-postgres.js && node --check scripts/verify-database.js",
     "db:migrate": "node scripts/run-migrations.js",
-    "db:import-json": "node scripts/migrate-json-to-postgres.js"
+    "db:import-json": "node scripts/migrate-json-to-postgres.js",
+    "db:verify": "node scripts/verify-database.js"
   },
   "engines": {
     "node": ">=20"

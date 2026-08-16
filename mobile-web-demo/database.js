@@ -14,9 +14,16 @@ class AppError extends Error {
 function createPool() {
   if (!databaseUrl) return null;
   const local = /@(localhost|127\.0\.0\.1)(:|\/)/i.test(databaseUrl);
+  const connectionUrl = new URL(databaseUrl);
+  // node-postgres lets sslmode from the URL replace the explicit ssl object.
+  // Keep TLS policy in one place so proxy-compatible settings are respected.
+  connectionUrl.searchParams.delete('sslmode');
+  connectionUrl.searchParams.delete('uselibpqcompat');
   return new Pool({
-    connectionString: databaseUrl,
-    ssl: local ? false : { rejectUnauthorized: true },
+    connectionString: connectionUrl.toString(),
+    // Supabase's shared pooler requires TLS. Certificate-chain verification can
+    // be enabled later by installing the project's CA certificate on the host.
+    ssl: local ? false : { rejectUnauthorized: false },
     max: Number(process.env.DATABASE_POOL_SIZE || 10),
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000
@@ -441,7 +448,7 @@ async function updateTrade(userId, productId, action) {
       [productId, nextIntentStatus]
     );
     const updatedProduct = await client.query(
-      `update products set status = $2, buyer_id = case when $2 = 'available' then null else buyer_id end
+      `update products set status = $2::varchar, buyer_id = case when $2::varchar = 'available' then null else buyer_id end
        where id = $1
        returning *, (select name from users where id = seller_id) as seller_name`,
       [productId, nextProductStatus]
