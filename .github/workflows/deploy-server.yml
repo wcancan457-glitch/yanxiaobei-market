@@ -133,7 +133,7 @@ jobs:
               --resolve "$DOMAIN:443:127.0.0.1" \
               "https://${DOMAIN}/" > /dev/null
 
-            PUBLIC_IP="$(curl --4 --fail --silent --max-time 10 https://api.ipify.org || true)"
+            PUBLIC_IP="$(curl --fail --silent --max-time 10 https://api.ipify.org || true)"
             echo "Public URL: https://${DOMAIN}/"
             echo "Server public IPv4: ${PUBLIC_IP:-unavailable}"
             systemctl --no-pager --full status yanxiaobei-market | head -n 15
