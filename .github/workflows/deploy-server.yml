@@ -132,9 +132,12 @@ jobs:
             systemctl enable --now nginx
             systemctl reload nginx
 
-            curl --fail --silent --show-error http://127.0.0.1:5177/ > /dev/null
-            curl --fail --silent --show-error http://127.0.0.1/api/health > /dev/null
-            curl --fail --silent --show-error http://127.0.0.1/api/bootstrap > /dev/null
+            curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 2 \
+              http://127.0.0.1:5177/ > /dev/null
+            curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 2 \
+              http://127.0.0.1:5177/api/health > /dev/null
+            curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 2 \
+              http://127.0.0.1:5177/api/bootstrap > /dev/null
 
             # Use the current Certbot release and let its systemd timer renew the
             # certificate automatically. Port 80 remains available for ACME checks.
@@ -158,6 +161,12 @@ jobs:
             curl --fail --silent --show-error --max-time 20 \
               --resolve "$DOMAIN:443:127.0.0.1" \
               "https://${DOMAIN}/" > /dev/null
+            curl --fail --silent --show-error --max-time 20 \
+              --resolve "$DOMAIN:443:127.0.0.1" \
+              "https://${DOMAIN}/api/health" > /dev/null
+            curl --fail --silent --show-error --max-time 20 \
+              --resolve "$DOMAIN:443:127.0.0.1" \
+              "https://${DOMAIN}/api/bootstrap" > /dev/null
 
             PUBLIC_IP="$(curl --fail --silent --max-time 10 https://api.ipify.org || true)"
             echo "Public URL: https://${DOMAIN}/"
@@ -165,4 +174,7 @@ jobs:
             systemctl --no-pager --full status yanxiaobei-market | head -n 15
 
       - name: Verify the public site
-        run: curl --fail --silent --show-error --max-time 20 "https://yanxiaobei.wangpangxie.top/" > /dev/null
+        run: |
+          curl --fail --silent --show-error --max-time 20 "https://yanxiaobei.wangpangxie.top/" > /dev/null
+          curl --fail --silent --show-error --max-time 20 "https://yanxiaobei.wangpangxie.top/api/health" > /dev/null
+          curl --fail --silent --show-error --max-time 20 "https://yanxiaobei.wangpangxie.top/api/bootstrap" > /dev/null
