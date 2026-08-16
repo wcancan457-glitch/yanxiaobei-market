@@ -47,7 +47,8 @@ jobs:
             RELEASE_DIR=/tmp/yanxiaobei-release/mobile-web-demo
 
             apt-get update
-            DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync snapd npm
+            DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync snapd
+            command -v npm > /dev/null
 
             DOMAIN=yanxiaobei.wangpangxie.top
 
