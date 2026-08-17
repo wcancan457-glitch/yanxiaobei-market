@@ -470,7 +470,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   padding: 0 13px;
   font-size: 12px;
 }
-.task-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.task-strip { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .task-card {
   padding: 14px;
   border-radius: 16px;
@@ -483,6 +483,9 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 .task-top { display: grid; gap: 8px; margin-bottom: 9px; }
 .task-top strong { font-size: 15px; line-height: 1.35; font-weight: 800; }
 .reward { color: var(--red-pin); font-size: 19px; font-weight: 800; white-space: nowrap; }
+.task-card .tag { white-space: normal; overflow-wrap: anywhere; }
+.tag.deadline { color: #9A3D35; background: #FDE9E6; font-variant-numeric: tabular-nums; }
+.tag.expired { color: #6F7785; background: #ECE7DB; }
 
 /* ===== 发布页 ===== */
 .form-page { padding: 20px 18px 18px; }
@@ -498,18 +501,20 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 .form-panel {
   display: grid;
   gap: 15px;
+  min-width: 0;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 18px;
   box-shadow: var(--shadow-1);
 }
-.field { display: grid; gap: 7px; }
+.field { display: grid; gap: 7px; min-width: 0; }
 .field label { font-size: 13px; color: var(--ink-2); font-weight: 700; }
 .field input,
 .field textarea,
 .field select {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fff;
@@ -530,6 +535,15 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   color: var(--muted);
   font-size: 12px;
   line-height: 1.55;
+}
+.post-safety-note {
+  margin: 0;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: #F7F1E4;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
 }
 .field input[aria-invalid="true"] { border-color: var(--red-pin); }
 
@@ -1283,28 +1297,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             <button data-tab="post">发布任务</button>
           </div>
           <div class="task-strip" id="taskList">
-            <article class="task-card">
-              <div class="task-top">
-                <strong>帮忙取一份文件</strong>
-                <span class="reward">¥8</span>
-              </div>
-              <div class="meta-row">
-                <span class="tag green">中蓝校区</span>
-                <span class="tag">取送</span>
-                <span class="tag">今天 18:30 前</span>
-              </div>
-            </article>
-            <article class="task-card">
-              <div class="task-top">
-                <strong>毕业季闲置整理拍照</strong>
-                <span class="reward">¥25</span>
-              </div>
-              <div class="meta-row">
-                <span class="tag green">平乐园校区</span>
-                <span class="tag">兼职</span>
-                <span class="tag">约 1 小时</span>
-              </div>
-            </article>
+            <div class="empty-state">正在加载互助任务…</div>
           </div>
         </section>
       </section>
@@ -1317,16 +1310,16 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             <button class="chip" id="postTaskTab" type="button">互助任务</button>
           </div>
           <form class="form-panel" id="postForm">
-            <label class="photo-upload" id="photoUpload">
+            <label class="photo-upload" id="photoUpload" data-post-mode="product">
               <span id="photoUploadText">添加商品图片</span>
               <img id="photoPreview" src="assets/yanxiaobei-blue-bg.png" alt="商品图片预览">
               <input id="photoInput" type="file" accept="image/*">
             </label>
             <div class="field">
-              <label for="title">标题</label>
+              <label for="title" id="titleLabel">商品标题</label>
               <input id="title" placeholder="例如：近代史教材与重点笔记">
             </div>
-            <div class="field">
+            <div class="field" data-post-mode="product">
               <label for="category">分类</label>
               <select id="category">
                 <option>教材资料</option>
@@ -1335,7 +1328,28 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
                 <option>服饰美妆</option>
                 <option>运动户外</option>
                 <option>乐器文具</option>
-                <option>互助兼职</option>
+              </select>
+            </div>
+            <div class="field" data-post-mode="product">
+              <label for="condition">成色</label>
+              <select id="condition">
+                <option value="">请选择商品成色</option>
+                <option>全新未使用</option>
+                <option>近乎全新</option>
+                <option>轻微使用痕迹</option>
+                <option>明显使用痕迹</option>
+                <option>功能正常但有瑕疵</option>
+              </select>
+            </div>
+            <div class="field" data-post-mode="task" hidden>
+              <label for="taskType">任务类型</label>
+              <select id="taskType">
+                <option value="">请选择任务类型</option>
+                <option value="pickup">取送物品</option>
+                <option value="errand">校园代办</option>
+                <option value="part_time">短时兼职</option>
+                <option value="skill">技能协助</option>
+                <option value="other">其他互助</option>
               </select>
             </div>
             <div class="field">
@@ -1346,17 +1360,39 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
               </select>
             </div>
             <div class="field">
-              <label for="place">公开取货地点</label>
+              <label for="place" id="placeLabel">公开取货地点</label>
               <input id="place" placeholder="例如：食堂门口、教学楼大厅、校门口">
             </div>
             <div class="field">
               <label for="price" id="priceLabel">价格</label>
               <input id="price" placeholder="请输入价格">
             </div>
-            <div class="field">
-              <label for="desc">描述</label>
-              <textarea id="desc" placeholder="写清楚成色、瑕疵、交易方式。不填写宿舍号。"></textarea>
+            <div class="field" data-post-mode="task" hidden>
+              <label for="deadlineAt">截止日期和时间</label>
+              <input id="deadlineAt" type="datetime-local">
+              <p class="field-hint">列表会显示完整年月日和时间；到期后任务自动停止接单。</p>
             </div>
+            <div class="field" data-post-mode="task" hidden>
+              <label for="estimatedMinutes">预计耗时</label>
+              <select id="estimatedMinutes">
+                <option value="">请选择预计耗时</option>
+                <option value="15">约 15 分钟</option>
+                <option value="30">约 30 分钟</option>
+                <option value="60">约 1 小时</option>
+                <option value="120">约 2 小时</option>
+                <option value="240">约半天</option>
+                <option value="480">约 1 天</option>
+              </select>
+            </div>
+            <div class="field" data-post-mode="product">
+              <label for="productDesc">商品描述</label>
+              <textarea id="productDesc" placeholder="写清楚瑕疵、配件和交易方式，不填写宿舍号。"></textarea>
+            </div>
+            <div class="field" data-post-mode="task" hidden>
+              <label for="taskDesc">任务说明</label>
+              <textarea id="taskDesc" placeholder="写清要做什么、做到什么程度，以及可联系的时间段。"></textarea>
+            </div>
+            <p class="post-safety-note" data-post-mode="task" hidden>请写清任务内容、交付标准和联系时段。不得发布代考、危险、违法或侵犯隐私的任务，线下协作优先选择校内公共地点。</p>
             <button class="primary-btn" id="publishButton" type="submit">发布商品</button>
           </form>
         </div>
@@ -1520,6 +1556,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           <strong id="sheetState">在售</strong>
         </div>
         <div class="detail-item">
+          <span>商品成色</span>
+          <strong id="sheetCondition">未填写</strong>
+        </div>
+        <div class="detail-item">
           <span>交易方式</span>
           <strong>校内面交</strong>
         </div>
@@ -1600,6 +1640,9 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const photoInput = document.getElementById('photoInput');
     const photoPreview = document.getElementById('photoPreview');
     const priceLabel = document.getElementById('priceLabel');
+    const titleLabel = document.getElementById('titleLabel');
+    const placeLabel = document.getElementById('placeLabel');
+    const deadlineInput = document.getElementById('deadlineAt');
     const sheetMask = document.getElementById('sheetMask');
     const closeSheet = document.getElementById('closeSheet');
     const sheetImg = document.getElementById('sheetImg');
@@ -1608,6 +1651,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const sheetDesc = document.getElementById('sheetDesc');
     const sheetLocation = document.getElementById('sheetLocation');
     const sheetState = document.getElementById('sheetState');
+    const sheetCondition = document.getElementById('sheetCondition');
     const sheetHint = document.getElementById('sheetHint');
     const wantButton = document.getElementById('wantButton');
     const avatarLogin = document.getElementById('avatarLogin');
@@ -1784,8 +1828,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           campusText: '中蓝校区',
           location: '中蓝校区 · 教学楼大厅',
           reward: 8,
-          desc: '今天 18:30 前帮忙取一份文件。',
+          desc: '从学院办公室取文件，送到教学楼大厅。',
           status: 'open',
+          taskType: 'pickup',
+          deadlineAt: Date.now() + 24 * 60 * 60 * 1000,
+          estimatedMinutes: 30,
           publisherId: '20239999',
           createdAt: Date.now() - 240000
         },
@@ -1798,6 +1845,9 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           reward: 25,
           desc: '帮忙整理闲置并拍照，大约 1 小时。',
           status: 'open',
+          taskType: 'part_time',
+          deadlineAt: Date.now() + 48 * 60 * 60 * 1000,
+          estimatedMinutes: 60,
           publisherId: '20239999',
           createdAt: Date.now() - 180000
         }
@@ -1880,6 +1930,53 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         sold: '已售',
         down: '已下架'
       }[status] || status;
+    }
+
+    function taskTypeText(type) {
+      return {
+        pickup: '取送物品',
+        errand: '校园代办',
+        part_time: '短时兼职',
+        skill: '技能协助',
+        other: '其他互助'
+      }[type] || '其他互助';
+    }
+
+    function taskStatusText(status) {
+      return {
+        open: '待接单',
+        in_progress: '进行中',
+        done: '已完成',
+        cancelled: '已取消',
+        expired: '已过期'
+      }[status] || status;
+    }
+
+    function effectiveTaskStatus(task) {
+      return task.status === 'open' && task.deadlineAt && task.deadlineAt <= Date.now()
+        ? 'expired'
+        : task.status;
+    }
+
+    function formatTaskDeadline(timestamp) {
+      if (!timestamp) return '未填写日期';
+      return new Intl.DateTimeFormat('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(new Date(timestamp));
+    }
+
+    function formatTaskDuration(minutes) {
+      const value = Number(minutes);
+      if (!value) return '耗时未填写';
+      if (value < 60) return `约 ${value} 分钟`;
+      if (value === 240) return '约半天';
+      if (value === 480) return '约 1 天';
+      return `约 ${value / 60} 小时`;
     }
 
     function showToast(message) {
@@ -1975,6 +2072,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             </div>
             <div class="meta-row">
               <span class="tag">${escapeHtml(product.category.replace('资料', ''))}</span>
+              ${product.condition && product.condition !== '未填写' ? `<span class="tag">${escapeHtml(product.condition)}</span>` : ''}
               ${locked ? '<span class="tag yellow">交易中</span>' : '<span class="tag">在售</span>'}
             </div>
             <div class="price-row">
@@ -2005,10 +2103,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     function renderTasks() {
       const taskList = document.getElementById('taskList');
       const visibleTasks = (state.tasks || [])
-        .filter((task) => task.status !== 'done' && task.status !== 'cancelled')
+        .filter((task) => task.status === 'open' || task.status === 'in_progress')
+        .filter((task) => task.status === 'in_progress' || (task.deadlineAt && task.deadlineAt > Date.now()))
         .filter((task) => currentFilter === 'all' || task.campus === currentFilter)
         .filter((task) => !currentSearch || `${task.title} ${task.desc} ${task.location}`.toLowerCase().includes(currentSearch))
-        .sort((a, b) => b.createdAt - a.createdAt);
+        .sort((a, b) => (a.deadlineAt || Infinity) - (b.deadlineAt || Infinity));
       const user = currentUser();
       taskList.innerHTML = visibleTasks.length ? visibleTasks.map((task) => {
         const isPublisher = user?.id === task.publisherId;
@@ -2021,12 +2120,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         } else if (task.status === 'in_progress') {
           if (isPublisher) {
             actionHtml = `
-              <div class="task-actions">
-                <button class="mini-btn danger" data-task-action="cancel" data-id="${task.id}">取消任务</button>
-                <button class="mini-btn primary" data-task-action="done" data-id="${task.id}">确认完成</button>
-              </div>`;
+              <button class="mini-btn danger" data-task-action="cancel" data-id="${task.id}">取消任务</button>
+              <button class="mini-btn primary" data-task-action="done" data-id="${task.id}">确认完成</button>`;
           } else if (isTaker) {
-            actionHtml = '<span class="tag yellow">已接单，等待发布者确认</span>';
+            actionHtml = '<span class="tag yellow">任务进行中，完成后由发布者确认</span>';
           } else {
             actionHtml = '<span class="tag yellow">已被接单</span>';
           }
@@ -2045,7 +2142,9 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
               <span>${escapeHtml(task.campusText)}</span>
             </div>
             <div class="meta-row">
-              <span class="tag">互助</span>
+              <span class="tag">${escapeHtml(taskTypeText(task.taskType))}</span>
+              <span class="tag deadline">截止 ${escapeHtml(formatTaskDeadline(task.deadlineAt))}</span>
+              <span class="tag">${escapeHtml(formatTaskDuration(task.estimatedMinutes))}</span>
               <span class="tag">${escapeHtml(task.location)}</span>
             </div>
             ${actionHtml ? '<div class="task-actions">' + actionHtml + '</div>' : ''}
@@ -2200,6 +2299,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       }
 
       const myProducts = state.products.filter((product) => product.sellerId === user.id);
+      const myTasks = state.tasks.filter((task) => task.publisherId === user.id || task.takerId === user.id);
       const sold = myProducts.filter((product) => product.status === 'sold').length;
       const pending = state.intents.filter((intent) => {
         const product = state.products.find((item) => item.id === intent.productId);
@@ -2228,6 +2328,30 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           </div>
         </div>
       `).join('') : '<p class="empty-state" style="margin-top:8px;">还没有发布过商品，去首页点发布吧。</p>';
+      const taskRows = myTasks.length ? myTasks.map((item) => {
+        const displayStatus = effectiveTaskStatus(item);
+        const tone = displayStatus === 'open' ? 'done' : displayStatus === 'in_progress' ? 'warn' : 'closed';
+        const isPublisher = item.publisherId === user.id;
+        const isTaker = item.takerId === user.id;
+        return `
+          <div class="my-product-row">
+            <div class="my-product-info">
+              <strong>${escapeHtml(item.title)}</strong>
+              <span class="status-badge ${tone}">${isPublisher ? '我发布' : '我接取'} · ${escapeHtml(taskStatusText(displayStatus))} · ${escapeHtml(formatTaskDeadline(item.deadlineAt))}</span>
+            </div>
+            <div class="my-product-actions">
+              ${isPublisher && (displayStatus === 'open' || displayStatus === 'in_progress')
+                ? `<button class="mini-btn danger" data-action="task-cancel" data-id="${item.id}">取消</button>`
+                : ''}
+              ${isPublisher && displayStatus === 'in_progress'
+                ? `<button class="mini-btn primary" data-action="task-done" data-id="${item.id}">完成</button>`
+                : ''}
+              ${isTaker && !isPublisher && displayStatus === 'in_progress'
+                ? `<button class="mini-btn danger" data-action="task-withdraw" data-id="${item.id}">放弃接单</button>`
+                : ''}
+            </div>
+          </div>`;
+      }).join('') : '<p class="empty-state" style="margin-top:8px;">还没有发布过互助任务。</p>';
       profileList.innerHTML = `
         ${user.isAdmin ? `
           <article class="profile-card admin-entry">
@@ -2240,6 +2364,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           <h3>我的发布</h3>
           <p>共 ${myProducts.length} 件商品，${myProducts.filter((item) => item.status === 'trading').length} 件交易中，${sold} 件已售。</p>
           <div class="my-product-list">${manageRows}</div>
+        </article>
+        <article class="profile-card">
+          <h3>我的互助任务</h3>
+          <p>共 ${myTasks.length} 个我发布或接取的任务；过期记录会保留，但不会继续在首页接单。</p>
+          <div class="my-product-list">${taskRows}</div>
         </article>
         <article class="profile-card"><h3>我想要</h3><p>我发起了 ${state.intents.filter((item) => item.buyerId === user.id).length} 个我想要，可以在消息页继续聊天。</p></article>
         <article class="profile-card"><h3>账号与安全</h3><p>学号仅用于身份识别，不向普通用户展示。</p></article>
@@ -2426,6 +2555,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       sheetDesc.textContent = product.desc;
       sheetLocation.textContent = product.location;
       sheetState.textContent = statusText(product.status);
+      sheetCondition.textContent = product.condition || '未填写';
       if (product.image) {
         sheetImg.className = 'sheet-image product-img uploaded';
         sheetImg.innerHTML = `<img src="${product.image}" alt="${escapeHtml(product.title)}">`;
@@ -2506,17 +2636,36 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         openLogin();
         return;
       }
+      const isTask = postMode === 'task';
       const title = document.getElementById('title').value.trim();
       const category = document.getElementById('category').value;
+      const condition = document.getElementById('condition').value;
       const campusText = document.getElementById('campus').value;
       const location = document.getElementById('place').value.trim();
       const price = Number(document.getElementById('price').value || 0);
-      const desc = document.getElementById('desc').value.trim();
+      const desc = document.getElementById(isTask ? 'taskDesc' : 'productDesc').value.trim();
       if (!title || !location || !(price > 0) || !desc) {
-        showToast('请补全标题、地点、价格和描述');
+        showToast(isTask ? '请补全任务标题、地点、报酬和任务说明' : '请补全商品标题、地点、价格和商品描述');
         return;
       }
-      const isTask = postMode === 'task' || category.includes('互助');
+      if (!isTask && !condition) {
+        showToast('请选择商品成色');
+        return;
+      }
+      const taskType = document.getElementById('taskType').value;
+      const deadlineValue = deadlineInput.value;
+      const estimatedMinutes = Number(document.getElementById('estimatedMinutes').value);
+      const deadlineDate = new Date(deadlineValue);
+      if (isTask && (!taskType || !deadlineValue || !Number.isFinite(deadlineDate.getTime()) || !estimatedMinutes)) {
+        showToast('请选择任务类型、明确截止时间和预计耗时');
+        return;
+      }
+      if (isTask && deadlineDate.getTime() <= Date.now()) {
+        showToast('截止时间必须晚于当前时间');
+        deadlineInput.setAttribute('aria-invalid', 'true');
+        return;
+      }
+      deadlineInput.setAttribute('aria-invalid', 'false');
       const visual = category.includes('教材')
         ? { imgClass: 'img-book', symbol: '书' }
         : category.includes('数码')
@@ -2537,8 +2686,14 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       };
       const endpoint = isTask ? '/api/tasks' : '/api/products';
       const payload = isTask
-        ? { ...common, reward: price }
-        : { ...common, category, price, image: uploadedImageData, ...visual };
+        ? {
+            ...common,
+            reward: price,
+            taskType,
+            deadlineAt: deadlineDate.toISOString(),
+            estimatedMinutes
+          }
+        : { ...common, category, condition, price, image: uploadedImageData, ...visual };
 
       setPublishingState(true);
       try {
@@ -2550,6 +2705,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         publishRequestKey = '';
         postForm.reset();
         resetPhotoUpload();
+        setPostMode(postMode);
         await hydrateFromServer();
         switchTab('home');
         showToast(isTask ? '互助任务已发布' : '商品发布成功');
@@ -2564,17 +2720,34 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       postMode = mode;
       postProductTab.classList.toggle('active', mode === 'product');
       postTaskTab.classList.toggle('active', mode === 'task');
-      const category = document.getElementById('category');
+      document.querySelectorAll('[data-post-mode]').forEach((element) => {
+        element.hidden = element.dataset.postMode !== mode;
+      });
       if (mode === 'task') {
-        category.value = '互助兼职';
+        titleLabel.textContent = '任务标题';
+        document.getElementById('title').placeholder = '例如：取一份学院文件送到教学楼大厅';
+        placeLabel.textContent = '任务地点';
+        document.getElementById('place').placeholder = '例如：教学楼大厅、快递站、校门口';
         priceLabel.textContent = '报酬';
-        photoUploadText.textContent = '互助任务可不添加图片';
+        document.getElementById('price').placeholder = '请输入任务报酬';
+        deadlineInput.min = minimumLocalDateTime();
       } else {
-        if (category.value === '互助兼职') category.value = '教材资料';
+        titleLabel.textContent = '商品标题';
+        document.getElementById('title').placeholder = '例如：近代史教材与重点笔记';
+        placeLabel.textContent = '公开取货地点';
+        document.getElementById('place').placeholder = '例如：食堂门口、教学楼大厅、校门口';
         priceLabel.textContent = '价格';
+        document.getElementById('price').placeholder = '请输入价格';
         photoUploadText.textContent = uploadedImageData ? '已添加商品图片' : '添加商品图片';
       }
       if (!publishing) publishButton.textContent = mode === 'task' ? '发布任务' : '发布商品';
+    }
+
+    function minimumLocalDateTime() {
+      const date = new Date(Date.now() + 5 * 60 * 1000);
+      date.setSeconds(0, 0);
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000);
+      return local.toISOString().slice(0, 16);
     }
 
     function resetPhotoUpload() {
@@ -2582,7 +2755,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       photoInput.value = '';
       photoPreview.src = 'assets/yanxiaobei-blue-bg.png';
       photoUpload.classList.remove('has-image');
-      photoUploadText.textContent = postMode === 'task' ? '互助任务可不添加图片' : '添加商品图片';
+      photoUploadText.textContent = '添加商品图片';
     }
 
     async function acceptIntent(intentId) {
@@ -2728,6 +2901,21 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       } catch (error) {
         showToast(error.message);
       }
+    }
+
+    async function submitTaskAction(task, action) {
+      await apiRequest(`/api/tasks/${encodeURIComponent(task.id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action })
+      });
+      await hydrateFromServer();
+      showToast(action === 'take'
+        ? '接单成功，任务已开始'
+        : action === 'done'
+          ? '任务已完成，感谢参与'
+          : action === 'withdraw'
+            ? '已放弃接单，任务重新开放'
+          : '任务已取消');
     }
 
     navButtons.forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
@@ -2885,6 +3073,14 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         } catch (error) {
           showToast(error.message);
         }
+      } else if (action === 'task-cancel' || action === 'task-done' || action === 'task-withdraw') {
+        const task = state.tasks.find((item) => item.id === button.dataset.id);
+        if (!task) return;
+        try {
+          await submitTaskAction(task, action === 'task-done' ? 'done' : action === 'task-withdraw' ? 'withdraw' : 'cancel');
+        } catch (error) {
+          showToast(error.message);
+        }
       } else if (action === 'down' || action === 'up') {
         const product = state.products.find((item) => item.id === button.dataset.id);
         if (!product) return;
@@ -2945,18 +3141,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       if (action === 'take') {
         if (!user) { openLogin(); return; }
         if (user.id === task.publisherId) { showToast('不能接自己发布的任务'); return; }
+        if (task.deadlineAt && task.deadlineAt <= Date.now()) { showToast('任务已过期，请刷新页面'); renderTasks(); return; }
       }
       try {
-        await apiRequest(`/api/tasks/${encodeURIComponent(task.id)}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ action })
-        });
-        await hydrateFromServer();
-        showToast(action === 'take'
-          ? '接单成功，等待发布者确认'
-          : action === 'done'
-            ? '任务已完成，感谢参与'
-            : '任务已取消');
+        await submitTaskAction(task, action);
       } catch (error) {
         showToast(error.message);
       }
@@ -2975,6 +3163,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       await hydrateFromServer();
       renderAll();
     })();
+    window.setInterval(() => {
+      renderTasks();
+      if (currentUser()) renderProfile();
+    }, 60 * 1000);
   </script>
 </body>
 </html>

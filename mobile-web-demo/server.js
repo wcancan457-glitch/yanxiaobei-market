@@ -164,6 +164,7 @@ function productInput(body) {
   const input = {
     title: text(body.title, 100),
     category: text(body.category, 30),
+    condition: text(body.condition, 30) || '未填写',
     campus: text(body.campus, 30),
     campusText: text(body.campusText, 30),
     price: positiveNumber(body.price, '价格'),
@@ -180,16 +181,35 @@ function productInput(body) {
 }
 
 function taskInput(body) {
+  const taskTypes = ['pickup', 'errand', 'part_time', 'skill', 'other'];
+  const deadlineAt = new Date(String(body.deadlineAt || ''));
+  const estimatedMinutes = Number(body.estimatedMinutes);
   const input = {
     title: text(body.title, 100),
+    taskType: text(body.taskType, 30),
     campus: text(body.campus, 30),
     campusText: text(body.campusText, 30),
     reward: positiveNumber(body.reward, '报酬'),
     location: text(body.location, 120),
-    desc: text(body.desc, 5000)
+    desc: text(body.desc, 5000),
+    deadlineAt,
+    estimatedMinutes
   };
-  if (!input.title || !input.campus || !input.campusText || !input.location || !input.desc) {
+  if (!input.title || !taskTypes.includes(input.taskType) || !input.campus || !input.campusText || !input.location || !input.desc) {
     throw new db.AppError(400, '请补全任务信息');
+  }
+  if (!Number.isFinite(deadlineAt.getTime())) {
+    throw new db.AppError(400, '请选择明确的任务截止日期和时间');
+  }
+  const now = Date.now();
+  if (deadlineAt.getTime() <= now) {
+    throw new db.AppError(400, '截止时间必须晚于当前时间');
+  }
+  if (deadlineAt.getTime() > now + 365 * 24 * 60 * 60 * 1000) {
+    throw new db.AppError(400, '截止时间不能超过一年');
+  }
+  if (!Number.isInteger(estimatedMinutes) || estimatedMinutes < 5 || estimatedMinutes > 1440) {
+    throw new db.AppError(400, '请选择预计耗时');
   }
   return input;
 }

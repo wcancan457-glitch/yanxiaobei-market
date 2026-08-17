@@ -85,6 +85,7 @@ function productFromRow(row) {
     id: row.id,
     title: row.title,
     category: row.category,
+    condition: row.item_condition || '未填写',
     campus: row.campus,
     campusText: row.campus_text,
     price: money(row.price),
@@ -111,6 +112,9 @@ function taskFromRow(row) {
     location: row.location,
     desc: row.description,
     status: row.status,
+    taskType: row.task_type || 'other',
+    deadlineAt: timestamp(row.deadline_at),
+    estimatedMinutes: row.estimated_minutes ? Number(row.estimated_minutes) : null,
     publisherId: String(row.publisher_id),
     takerId: row.taker_id ? String(row.taker_id) : '',
     createdAt: timestamp(row.created_at)
@@ -336,6 +340,7 @@ async function manageAdminUser(adminId, targetUserId, action) {
 }
 
 async function getBootstrap(userId = null) {
+  await expireOpenTasks();
   const usersPromise = query('select id, name, campus from users order by created_at');
   const productsPromise = userId
     ? query(
@@ -402,9 +407,9 @@ async function createProduct(userId, input, requestId) {
   const id = `p_${randomUUID()}`;
   const result = await query(
     `insert into products
-      (id, title, category, campus, campus_text, price, location, description,
+      (id, title, category, item_condition, campus, campus_text, price, location, description,
        seller_id, image_url, image_class, symbol, request_id)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      on conflict (seller_id, request_id) where request_id is not null
      do update set request_id = excluded.request_id
      returning *, (select name from users where id = seller_id) as seller_name`,
@@ -412,6 +417,7 @@ async function createProduct(userId, input, requestId) {
       id,
       input.title,
       input.category,
+      input.condition,
       input.campus,
       input.campusText,
       input.price,
@@ -455,23 +461,47 @@ async function createTask(userId, input, requestId) {
   const id = `t_${randomUUID()}`;
   const result = await query(
     `insert into tasks
-      (id, title, campus, campus_text, reward, location, description, publisher_id, request_id)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      (id, title, task_type, campus, campus_text, reward, location, description,
+       deadline_at, estimated_minutes, publisher_id, request_id)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      on conflict (publisher_id, request_id) where request_id is not null
      do update set request_id = excluded.request_id
      returning *`,
-    [id, input.title, input.campus, input.campusText, input.reward, input.location, input.desc, userId, requestId]
+    [
+      id,
+      input.title,
+      input.taskType,
+      input.campus,
+      input.campusText,
+      input.reward,
+      input.location,
+      input.desc,
+      input.deadlineAt,
+      input.estimatedMinutes,
+      userId,
+      requestId
+    ]
   );
   return taskFromRow(result.rows[0]);
 }
 
+async function expireOpenTasks() {
+  await query(
+    `update tasks
+     set status = 'expired', updated_at = now()
+     where status = 'open' and deadline_at is not null and deadline_at <= now()`
+  );
+}
+
 async function updateTask(userId, taskId, action) {
+  await expireOpenTasks();
   return transaction(async (client) => {
     const current = await client.query('select * from tasks where id = $1 for update', [taskId]);
     const task = current.rows[0];
     if (!task) throw new AppError(404, '任务不存在');
 
     if (action === 'take') {
+      if (task.status === 'expired') throw new AppError(409, '任务已过期，请刷新页面');
       if (task.status !== 'open') throw new AppError(409, '任务已被接取');
       if (String(task.publisher_id) === userId) throw new AppError(400, '不能接自己发布的任务');
       task.status = 'in_progress';
@@ -486,13 +516,21 @@ async function updateTask(userId, taskId, action) {
         throw new AppError(403, '只有发布者可以取消任务');
       }
       task.status = 'cancelled';
+    } else if (action === 'withdraw') {
+      if (String(task.taker_id) !== userId || task.status !== 'in_progress') {
+        throw new AppError(403, '只有当前接单者可以放弃接单');
+      }
+      if (task.deadline_at && new Date(task.deadline_at).getTime() <= Date.now()) {
+        throw new AppError(409, '任务已到截止时间，无法重新开放，请联系发布者处理');
+      }
+      task.status = 'open';
       task.taker_id = null;
     } else {
       throw new AppError(400, '任务操作不合法');
     }
 
     const updated = await client.query(
-      'update tasks set status = $2, taker_id = $3 where id = $1 returning *',
+      'update tasks set status = $2, taker_id = $3, updated_at = now() where id = $1 returning *',
       [taskId, task.status, task.taker_id]
     );
     return taskFromRow(updated.rows[0]);

@@ -94,12 +94,13 @@ async function main() {
       if (!sellerId) continue;
       await client.query(
         `insert into products
-          (id, title, category, campus, campus_text, price, location, description,
+          (id, title, category, item_condition, campus, campus_text, price, location, description,
            status, seller_id, buyer_id, image_url, image_class, symbol, created_at)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
          on conflict (id) do update set
            title = excluded.title,
            category = excluded.category,
+           item_condition = excluded.item_condition,
            campus = excluded.campus,
            campus_text = excluded.campus_text,
            price = excluded.price,
@@ -115,6 +116,7 @@ async function main() {
           item.id,
           item.title,
           item.category || '其他',
+          item.condition || '未填写',
           item.campus || 'pingleyuan',
           item.campusText || '平乐园校区',
           Number(item.price) || 0.01,
@@ -136,33 +138,50 @@ async function main() {
     for (const item of state.tasks || []) {
       const publisherId = userIds.get(String(item.publisherId));
       if (!publisherId) continue;
+      const taskCreatedAt = asDate(item.createdAt);
+      const taskDeadlineAt = item.deadlineAt ? asDate(item.deadlineAt) : null;
+      const taskEstimatedMinutes = Number.isInteger(Number(item.estimatedMinutes))
+        ? Number(item.estimatedMinutes)
+        : null;
+      const terminalStatus = ['done', 'cancelled', 'expired'].includes(item.status);
+      const activeStatusIsValid = ['open', 'in_progress'].includes(item.status)
+        && taskDeadlineAt
+        && taskEstimatedMinutes
+        && taskDeadlineAt > taskCreatedAt;
+      const taskStatus = terminalStatus || activeStatusIsValid ? item.status : 'expired';
       await client.query(
         `insert into tasks
-          (id, title, campus, campus_text, reward, location, description,
-           status, publisher_id, taker_id, created_at)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          (id, title, task_type, campus, campus_text, reward, location, description,
+           deadline_at, estimated_minutes, status, publisher_id, taker_id, created_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          on conflict (id) do update set
            title = excluded.title,
+           task_type = excluded.task_type,
            campus = excluded.campus,
            campus_text = excluded.campus_text,
            reward = excluded.reward,
            location = excluded.location,
            description = excluded.description,
+           deadline_at = excluded.deadline_at,
+           estimated_minutes = excluded.estimated_minutes,
            status = excluded.status,
            publisher_id = excluded.publisher_id,
            taker_id = excluded.taker_id`,
         [
           item.id,
           item.title,
+          ['pickup', 'errand', 'part_time', 'skill', 'other'].includes(item.taskType) ? item.taskType : 'other',
           item.campus || 'pingleyuan',
           item.campusText || '平乐园校区',
           Number(item.reward) || 0.01,
           item.location || '校内公共地点',
           item.desc || '',
-          ['open', 'in_progress', 'done', 'cancelled'].includes(item.status) ? item.status : 'open',
+          taskDeadlineAt,
+          taskEstimatedMinutes,
+          taskStatus,
           publisherId,
           userIds.get(String(item.takerId)) || null,
-          asDate(item.createdAt)
+          taskCreatedAt
         ]
       );
       tasks += 1;
