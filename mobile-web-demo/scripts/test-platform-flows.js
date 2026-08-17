@@ -69,6 +69,45 @@ async function main() {
       [productId, members[0].id]
     );
     const purchase = await db.createIntent(String(members[1].id), productId);
+    const messageRequestId = `test_message_${suffix}`;
+    const messageCursor = `${new Date(Date.now() - 5_000).toISOString().replace(/Z$/, '000Z')}|`;
+    const realtimeMessage = await db.createMessage(String(members[1].id), {
+      productId,
+      peerId: String(members[0].id),
+      text: '实时消息增量同步测试',
+      requestId: messageRequestId
+    });
+    const duplicateMessage = await db.createMessage(String(members[1].id), {
+      productId,
+      peerId: String(members[0].id),
+      text: '实时消息增量同步测试',
+      requestId: messageRequestId
+    });
+    if (duplicateMessage.id !== realtimeMessage.id) {
+      throw new Error('Message idempotency created a duplicate message');
+    }
+    const incrementalMessages = await db.getMessagesSince(String(members[0].id), messageCursor, 100);
+    if (!incrementalMessages.messages.some((message) => message.id === realtimeMessage.id)) {
+      throw new Error('Incremental message query did not return the new message');
+    }
+    const pageTimestamp = new Date(Date.now() + 1_000);
+    const pageMessageIds = Array.from({ length: 102 }, (_, index) =>
+      `m_page_${suffix}_${String(index).padStart(3, '0')}`
+    );
+    await db.query(
+      `insert into messages (id, product_id, sender_id, recipient_id, body, created_at)
+       select id, $2, $3, $4, '复合游标分页测试', $5::timestamptz
+       from unnest($1::text[]) as id`,
+      [pageMessageIds, productId, members[1].id, members[0].id, pageTimestamp]
+    );
+    const pageStartCursor = `${pageTimestamp.toISOString().replace(/Z$/, '000Z')}|`;
+    const firstPage = await db.getMessagesSince(String(members[0].id), pageStartCursor, 100);
+    const secondPage = await db.getMessagesSince(String(members[0].id), firstPage.nextCursor, 100);
+    const pagedIds = new Set([...firstPage.messages, ...secondPage.messages].map((message) => message.id));
+    if (!firstPage.hasMore || secondPage.hasMore || pagedIds.size !== pageMessageIds.length ||
+      pageMessageIds.some((messageId) => !pagedIds.has(messageId))) {
+      throw new Error('Composite message cursor skipped or duplicated a pagination boundary');
+    }
     await db.blockUser(String(members[0].id), String(members[1].id));
     const sellerBootstrap = await db.getBootstrap(String(members[0].id));
     if (sellerBootstrap.intents.some((intent) => intent.id === purchase.intent.id)) {
@@ -81,6 +120,10 @@ async function main() {
       blockedIntentRejected = error.status === 403;
     }
     if (!blockedIntentRejected) throw new Error('Seller could accept a blocked buyer intent');
+    const blockedMessages = await db.getMessagesSince(String(members[0].id), messageCursor, 100);
+    if (blockedMessages.messages.some((message) => message.id === realtimeMessage.id)) {
+      throw new Error('Blocked peer message remained visible in incremental sync');
+    }
     await db.unblockUser(String(members[0].id), String(members[1].id));
 
     const report = await db.createReport(String(members[1].id), {
@@ -176,6 +219,7 @@ async function main() {
       taskApplication: 'accepted',
       blockedApply: 'rejected',
       blockedIntent: 'hidden-and-rejected',
+      realtimeMessage: 'incremental-idempotent-and-keyset-paginated',
       reportCreated: Boolean(reportId),
       reportBan: 'content-removed',
       emailRace: 'rejected',

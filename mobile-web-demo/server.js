@@ -25,6 +25,7 @@ const AUTH_CODE_TTL_MS = 10 * 60 * 1000;
 const authTokenSecret = String(process.env.AUTH_TOKEN_SECRET || '');
 const emailDeliveryConfigured = mailer.configured && authTokenSecret.length >= 32;
 const rateBuckets = new Map();
+const messageEventClients = new Map();
 
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -49,6 +50,144 @@ function send(res, status, body, type = 'application/json; charset=utf-8') {
 function sendJson(res, status, value) {
   res.setHeader('Cache-Control', 'no-store');
   send(res, status, JSON.stringify(value));
+}
+
+function openMessageEventStream(req, res, userId, tokenHash) {
+  let clients = messageEventClients.get(userId);
+  if (clients?.size >= 5) {
+    res.writeHead(204, {
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff'
+    });
+    res.end();
+    return;
+  }
+  if (!clients) {
+    clients = new Set();
+    messageEventClients.set(userId, clients);
+  }
+
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.flushHeaders?.();
+  res.socket?.setKeepAlive(true);
+
+  let heartbeat = null;
+  let heartbeatBusy = false;
+  const client = {
+    tokenHash,
+    closed: false,
+    write(chunk) {
+      if (this.closed) return false;
+      if (res.destroyed || res.writableEnded) {
+        this.close();
+        return false;
+      }
+      try {
+        if (!res.write(chunk)) {
+          this.close();
+          return false;
+        }
+        return true;
+      } catch {
+        this.close();
+        return false;
+      }
+    },
+    send(event, payload) {
+      return this.write(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`);
+    },
+    close() {
+      clearInterval(heartbeat);
+      heartbeat = null;
+      if (this.closed) return;
+      this.closed = true;
+      clients.delete(this);
+      if (!clients.size) messageEventClients.delete(userId);
+      if (!res.destroyed && !res.writableEnded) {
+        try { res.end(); } catch {}
+      }
+    }
+  };
+
+  clients.add(client);
+  heartbeat = setInterval(async () => {
+    if (client.closed || res.destroyed || res.writableEnded) {
+      client.close();
+      return;
+    }
+    if (heartbeatBusy) return;
+    heartbeatBusy = true;
+    try {
+      const validUser = await db.getSessionUser(tokenHash);
+      if (client.closed || res.destroyed || res.writableEnded) {
+        client.close();
+        return;
+      }
+      if (!validUser || String(validUser.id) !== userId) {
+        client.send('session_expired', { at: Date.now() });
+        client.close();
+        return;
+      }
+      client.write(': keepalive\n\n');
+    } catch {
+      client.write(': keepalive\n\n');
+    } finally {
+      heartbeatBusy = false;
+    }
+  }, 20_000);
+  heartbeat.unref?.();
+
+  req.on('close', () => client.close());
+  res.on('close', () => client.close());
+  res.on('error', () => client.close());
+  if (!client.write('retry: 3000\n\n')) {
+    client.close();
+    return;
+  }
+  client.send('ready', { at: Date.now() });
+}
+
+function publishMessageAvailable(userIds) {
+  const signal = { at: Date.now() };
+  new Set(userIds.map(String)).forEach((userId) => {
+    const clients = messageEventClients.get(userId);
+    if (!clients) return;
+    [...clients].forEach((client) => client.send('message_available', signal));
+  });
+}
+
+function publishVisibilityChanged(userIds = null) {
+  const signal = { at: Date.now() };
+  const targets = userIds
+    ? new Set(userIds.map(String).map((userId) => messageEventClients.get(userId)).filter(Boolean))
+    : new Set(messageEventClients.values());
+  targets.forEach((clients) => {
+    [...clients].forEach((client) => client.send('visibility_changed', signal));
+  });
+}
+
+function closeMessageStreamsForUser(userId) {
+  const clients = messageEventClients.get(String(userId));
+  if (!clients) return;
+  [...clients].forEach((client) => {
+    client.send('session_expired', { at: Date.now() });
+    client.close();
+  });
+}
+
+function closeMessageStreamsForToken(tokenHash) {
+  [...messageEventClients.values()].forEach((clients) => {
+    [...clients].forEach((client) => {
+      if (client.tokenHash !== tokenHash) return;
+      client.send('session_expired', { at: Date.now() });
+      client.close();
+    });
+  });
 }
 
 function clientIp(req) {
@@ -239,11 +378,11 @@ function text(value, maxLength, fallback = '') {
   return result || fallback;
 }
 
-function idempotencyKey(req) {
+function idempotencyKey(req, label = '发布') {
   const supplied = String(req.headers['idempotency-key'] || '').trim();
   if (!supplied) return crypto.randomUUID();
   if (!/^[A-Za-z0-9_-]{16,100}$/.test(supplied)) {
-    throw new db.AppError(400, '发布请求标识格式不正确，请刷新页面后重试');
+    throw new db.AppError(400, `${label}请求标识格式不正确，请刷新页面后重试`);
   }
   return supplied;
 }
@@ -345,6 +484,16 @@ function serveStatic(req, res) {
 async function handleApi(req, res, requestUrl) {
   const pathname = requestUrl.pathname;
 
+  if (pathname === '/api/events' && req.method === 'GET') {
+    const token = parseCookies(req)[SESSION_COOKIE];
+    if (!token) throw new db.AppError(401, '请先登录', 'authentication_required');
+    const tokenHash = sessionTokenHash(token);
+    const user = await db.getSessionUser(tokenHash);
+    if (!user) throw new db.AppError(401, '请先登录', 'authentication_required');
+    openMessageEventStream(req, res, String(user.id), tokenHash);
+    return true;
+  }
+
   if (pathname === '/api/health' && req.method === 'GET') {
     const health = await db.healthcheck();
     sendJson(res, 200, { ok: true, database: health.database });
@@ -410,7 +559,11 @@ async function handleApi(req, res, requestUrl) {
 
   if (pathname === '/api/auth/logout' && req.method === 'POST') {
     const token = parseCookies(req)[SESSION_COOKIE];
-    if (token) await db.deleteSession(sessionTokenHash(token));
+    if (token) {
+      const tokenHash = sessionTokenHash(token);
+      await db.deleteSession(tokenHash);
+      closeMessageStreamsForToken(tokenHash);
+    }
     setSessionCookie(req, res, '', 0);
     sendJson(res, 200, { ok: true });
     return true;
@@ -497,6 +650,7 @@ async function handleApi(req, res, requestUrl) {
       tokenHash: authCodeHash(user.id, 'reset_password', email, code)
     });
     await db.resetUserPassword(user.id, passwordHash(nextPassword));
+    closeMessageStreamsForUser(user.id);
     sendJson(res, 200, { ok: true, message: '密码已重置，请使用新密码登录' });
     return true;
   }
@@ -538,7 +692,11 @@ async function handleApi(req, res, requestUrl) {
   if (adminUserMatch && req.method === 'PATCH') {
     const admin = await requireAdmin(req);
     const body = await readJsonBody(req);
-    const result = await db.manageAdminUser(admin.id, adminUserMatch[1], String(body.action || ''));
+    const action = String(body.action || '');
+    const result = await db.manageAdminUser(admin.id, adminUserMatch[1], action);
+    if (action === 'disable' || action === 'force_logout') closeMessageStreamsForUser(adminUserMatch[1]);
+    if (action === 'disable' || action === 'enable') publishVisibilityChanged();
+    if (action === 'verify_identity') publishVisibilityChanged([adminUserMatch[1]]);
     sendJson(res, 200, { ok: true, result });
     return true;
   }
@@ -564,6 +722,10 @@ async function handleApi(req, res, requestUrl) {
       String(body.action || ''),
       text(body.resolution, 500)
     );
+    if (String(body.action || '') === 'disable_target' && report.targetOwnerId) {
+      closeMessageStreamsForUser(report.targetOwnerId);
+      publishVisibilityChanged();
+    }
     sendJson(res, 200, { ok: true, report });
     return true;
   }
@@ -637,6 +799,7 @@ async function handleApi(req, res, requestUrl) {
     const body = await readJsonBody(req);
     const result = await db.createIntent(user.id, text(body.productId, 100));
     sendJson(res, 201, { ok: true, ...result });
+    if (result.message) publishMessageAvailable([result.message.from, result.message.to]);
     return true;
   }
 
@@ -649,15 +812,25 @@ async function handleApi(req, res, requestUrl) {
     return true;
   }
 
+  if (pathname === '/api/messages' && req.method === 'GET') {
+    const user = await requireUser(req);
+    const after = String(requestUrl.searchParams.get('after') || '').slice(0, 200);
+    const result = await db.getMessagesSince(user.id, after, 100);
+    sendJson(res, 200, { ok: true, ...result });
+    return true;
+  }
+
   if (pathname === '/api/messages' && req.method === 'POST') {
     const user = await requireVerifiedUser(req);
     const body = await readJsonBody(req);
     const message = await db.createMessage(user.id, {
       productId: text(body.productId, 100),
       peerId: text(body.peerId, 100),
-      text: text(body.text, 2000)
+      text: text(body.text, 2000),
+      requestId: idempotencyKey(req, '消息发送')
     });
     sendJson(res, 201, { ok: true, message });
+    publishMessageAvailable([message.from, message.to]);
     return true;
   }
 
@@ -674,6 +847,7 @@ async function handleApi(req, res, requestUrl) {
     const body = await readJsonBody(req);
     const block = await db.blockUser(user.id, text(body.targetUserId, 100));
     sendJson(res, 201, { ok: true, block });
+    publishVisibilityChanged([user.id, block.userId]);
     return true;
   }
 
@@ -682,6 +856,7 @@ async function handleApi(req, res, requestUrl) {
     const user = await requireUser(req);
     await db.unblockUser(user.id, blockMatch[1]);
     sendJson(res, 200, { ok: true });
+    publishVisibilityChanged([user.id, blockMatch[1]]);
     return true;
   }
 
@@ -751,6 +926,9 @@ server.listen(port, '127.0.0.1', () => {
 });
 
 async function shutdown() {
+  [...messageEventClients.values()].forEach((clients) => {
+    [...clients].forEach((client) => client.close());
+  });
   server.close(async () => {
     if (db.pool) await db.pool.end().catch(() => {});
     process.exit(0);

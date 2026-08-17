@@ -68,6 +68,11 @@ function timestamp(value) {
   return value ? new Date(value).getTime() : 0;
 }
 
+function messageCursorTime(value) {
+  if (!value) return '1970-01-01T00:00:00.000000Z';
+  return new Date(value).toISOString().replace(/Z$/, '000Z');
+}
+
 function money(value) {
   return Number(value);
 }
@@ -143,7 +148,9 @@ function messageFromRow(row) {
     from: String(row.sender_id),
     to: String(row.recipient_id),
     text: row.body,
-    createdAt: timestamp(row.created_at)
+    createdAt: timestamp(row.created_at),
+    cursor: `${row.cursor_time || messageCursorTime(row.created_at)}|${row.id}`,
+    requestId: row.request_id || ''
   };
 }
 
@@ -1520,12 +1527,52 @@ async function createMessage(userId, input) {
     }
 
     const result = await client.query(
-      `insert into messages (id, product_id, sender_id, recipient_id, body)
-       values ($1, $2, $3, $4, $5) returning *`,
-      [`m_${randomUUID()}`, input.productId, userId, input.peerId, input.text]
+      `insert into messages (id, product_id, sender_id, recipient_id, body, request_id)
+       values ($1, $2, $3, $4, $5, $6)
+       on conflict (sender_id, request_id) where request_id is not null
+       do update set request_id = excluded.request_id
+       returning *`,
+      [`m_${randomUUID()}`, input.productId, userId, input.peerId, input.text, input.requestId]
     );
     return messageFromRow(result.rows[0]);
   });
+}
+
+async function getMessagesSince(userId, afterCursor = 0, limit = 100) {
+  const rawCursor = String(afterCursor || '');
+  const separator = rawCursor.lastIndexOf('|');
+  const suppliedTime = separator >= 0 ? rawCursor.slice(0, separator) : '';
+  const suppliedId = separator >= 0 ? rawCursor.slice(separator + 1) : '';
+  const cursorTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/.test(suppliedTime)
+    ? suppliedTime
+    : '1970-01-01T00:00:00.000000Z';
+  const cursorId = /^[A-Za-z0-9_-]{0,120}$/.test(suppliedId) ? suppliedId : '';
+  const pageSize = Math.min(Math.max(Number(limit) || 100, 1), 100);
+  const result = await query(
+    `select m.*,
+       to_char(m.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as cursor_time
+     from messages m
+     join products p on p.id = m.product_id
+     join users sender on sender.id = m.sender_id and not sender.is_disabled
+     join users recipient on recipient.id = m.recipient_id and not recipient.is_disabled
+     where (m.sender_id = $1 or m.recipient_id = $1)
+       and (m.created_at > $2::timestamptz or (m.created_at = $2::timestamptz and m.id > $3))
+       and (p.status in ('available', 'trading') or p.seller_id = $1 or p.buyer_id = $1)
+       and not exists (
+         select 1 from user_blocks b
+         where (b.blocker_id = $1 and b.blocked_id in (m.sender_id, m.recipient_id))
+            or (b.blocked_id = $1 and b.blocker_id in (m.sender_id, m.recipient_id))
+     )
+     order by m.created_at, m.id
+     limit $4`,
+    [userId, cursorTime, cursorId, pageSize + 1]
+  );
+  const messages = result.rows.slice(0, pageSize).map(messageFromRow);
+  return {
+    messages,
+    hasMore: result.rows.length > pageSize,
+    nextCursor: messages.at(-1)?.cursor || rawCursor
+  };
 }
 
 module.exports = {
@@ -1569,5 +1616,6 @@ module.exports = {
   createIntent,
   updateIntent,
   updateTrade,
-  createMessage
+  createMessage,
+  getMessagesSince
 };

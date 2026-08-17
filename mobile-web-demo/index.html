@@ -603,6 +603,37 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 
 /* ===== 消息 / 我的 ===== */
 .message-list, .profile-list { padding: 18px; display: grid; gap: 12px; }
+.message-sync-status, .chat-sync-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+.message-sync-status { margin-top: 9px; }
+.chat-sync-status {
+  min-height: 31px;
+  padding: 6px 18px 7px;
+  background: #F3EEE2;
+  border-bottom: 1px solid var(--line);
+}
+.message-sync-status::before, .chat-sync-status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #8A8375;
+  box-shadow: 0 2px 5px rgba(29, 52, 88, 0.18);
+}
+.message-sync-status.is-live, .chat-sync-status.is-live { color: #25613D; }
+.message-sync-status.is-live::before, .chat-sync-status.is-live::before { background: #2F9E5B; }
+.message-sync-status.is-retrying, .chat-sync-status.is-retrying { color: #76510C; }
+.message-sync-status.is-retrying::before, .chat-sync-status.is-retrying::before { background: var(--amber); }
+.message-sync-status.is-offline, .chat-sync-status.is-offline { color: #963D35; }
+.message-sync-status.is-offline::before, .chat-sync-status.is-offline::before { background: var(--red-pin); }
 .notice-card, .profile-card {
   padding: 16px;
   background: var(--card);
@@ -923,11 +954,25 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   line-height: 1.5;
 }
 .chat-bubble.mine { margin-left: auto; background: var(--blue-btn); color: #fff; }
+.chat-bubble.is-pending { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72); }
+.chat-bubble.is-failed { background: #A33A32; }
+.chat-send-state { display: block; margin-top: 3px; font-size: 11px; line-height: 1.3; color: #fff; text-align: right; }
+.chat-retry-message {
+  min-width: 44px;
+  min-height: 44px;
+  margin-top: 5px;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: #fff;
+  color: #7B2924;
+  font-size: 12px;
+  font-weight: 800;
+}
 
 .phone-shell.in-chat .bottom-nav { display: none; }
 .phone-shell.in-chat .app { padding-bottom: 0; }
 .chat-view { min-height: 100vh; background: var(--paper); }
-.chat-view.active { display: grid; grid-template-rows: auto auto 1fr auto; }
+.chat-view.active { display: grid; grid-template-rows: auto auto auto 1fr auto; }
 
 .list-header {
   display: grid;
@@ -1025,6 +1070,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   color: #fff;
   font-weight: 800;
 }
+.chat-send-btn:disabled { background: #9AA6AD; cursor: wait; }
 
 /* ===== 我的 ===== */
 .profile-hero {
@@ -1486,6 +1532,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             <strong>消息</strong>
             <span>交易会话、任务申请与平台处理通知</span>
           </div>
+          <div class="message-sync-status" id="messageConnectionStatus" role="status" aria-live="polite">登录后开启消息同步</div>
         </header>
         <div class="message-list" id="messageList">
         </div>
@@ -1500,10 +1547,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           </div>
           <button class="chat-more" type="button" data-toast="更多功能将在 MVP 后续加入"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.2" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.8" cy="12" r="1.6"/></svg></button>
         </header>
+        <div class="chat-sync-status" id="chatConnectionStatus" role="status" aria-live="polite">正在连接消息服务</div>
         <div class="chat-product-bar" id="chatProductBar"></div>
-        <div class="chat-log chat-page-log" id="chatLog"></div>
+        <div class="chat-log chat-page-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions text"></div>
         <div class="chat-input-bar">
-          <input id="chatInput" placeholder="想跟 TA 说点什么...">
+          <input id="chatInput" maxlength="2000" placeholder="想跟 TA 说点什么...">
           <button class="chat-send-btn" id="sendChat" type="button">发送</button>
         </div>
       </section>
@@ -1766,6 +1814,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       validSchoolEmail
     } = window.YanxiaobeiSchoolEmail;
     const STORAGE_KEY = 'yanxiaobei-campus-market-mvp-v1';
+    const MESSAGE_OUTBOX_KEY = 'yanxiaobei-message-outbox-v1';
+    const EMPTY_MESSAGE_CURSOR = '1970-01-01T00:00:00.000000Z|';
     const USE_API = location.protocol === 'http:' || location.protocol === 'https:';
     const phoneShell = document.querySelector('.phone-shell');
     const views = document.querySelectorAll('.view');
@@ -1775,6 +1825,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const productModule = document.getElementById('productModule');
     const taskModule = document.getElementById('taskModule');
     const messageList = document.getElementById('messageList');
+    const messageConnectionStatus = document.getElementById('messageConnectionStatus');
+    const chatConnectionStatus = document.getElementById('chatConnectionStatus');
     const profileList = document.getElementById('profileList');
     const adminBack = document.getElementById('adminBack');
     const adminRefresh = document.getElementById('adminRefresh');
@@ -1863,6 +1915,20 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     let adminLoading = false;
     let adminRequestSequence = 0;
     let adminSearchTimer = null;
+    let messageEventSource = null;
+    let messageEventUserId = '';
+    let messageSyncCursor = EMPTY_MESSAGE_CURSOR;
+    let messageCursorUserId = '';
+    let messageSyncInFlight = false;
+    let messageSyncQueued = false;
+    let messageSyncGeneration = 0;
+    let lastMessageSyncAt = 0;
+    let bootstrapRequestSequence = 0;
+    let lastVisibilityReconcileAt = 0;
+    let visibilityReconcileRequest = 0;
+    let messageOutbox = loadMessageOutbox();
+    let messageOutboxRetrying = new Set();
+    let handlingSessionExpired = false;
 
     const seedState = {
       currentUserId: '',
@@ -2045,7 +2111,9 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     }
 
     function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch {}
     }
 
     async function apiRequest(url, options = {}) {
@@ -2066,20 +2134,408 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       return data;
     }
 
-    async function hydrateFromServer() {
-      if (!USE_API) return;
+    function loadMessageOutbox() {
       try {
-        const remote = await apiRequest('/api/bootstrap');
+        const entries = JSON.parse(sessionStorage.getItem(MESSAGE_OUTBOX_KEY) || '[]');
+        return new Map((Array.isArray(entries) ? entries : [])
+          .filter((entry) =>
+            entry && /^[A-Za-z0-9_-]{16,100}$/.test(String(entry.requestId || '')) &&
+            String(entry.text || '').length > 0 && String(entry.text || '').length <= 2000
+          )
+          .map((entry) => [String(entry.id), entry]));
+      } catch {
+        return new Map();
+      }
+    }
+
+    function persistMessageOutbox() {
+      try {
+        sessionStorage.setItem(MESSAGE_OUTBOX_KEY, JSON.stringify([...messageOutbox.values()]));
+      } catch {}
+    }
+
+    function removeMessageOutboxEntry(messageId) {
+      const removed = messageOutbox.delete(messageId);
+      if (removed) persistMessageOutbox();
+      return removed;
+    }
+
+    function removeMessageOutboxByRequestIds(requestIds) {
+      let changed = false;
+      [...messageOutbox.entries()].forEach(([messageId, entry]) => {
+        if (!requestIds.has(entry.requestId)) return;
+        messageOutbox.delete(messageId);
+        changed = true;
+      });
+      if (changed) persistMessageOutbox();
+    }
+
+    function clearMessageOutboxForUser(userId) {
+      let changed = false;
+      [...messageOutbox.entries()].forEach(([messageId, entry]) => {
+        if (entry.userId !== userId) return;
+        messageOutbox.delete(messageId);
+        changed = true;
+      });
+      if (changed) persistMessageOutbox();
+      state.chats = (state.chats || []).filter((message) => !(message.pending && message.from === userId));
+    }
+
+    function restoreMessageOutboxForCurrentUser() {
+      const user = currentUser();
+      if (!user) return;
+      const committedRequestIds = new Set((state.chats || [])
+        .filter((message) => !message.pending)
+        .map((message) => message.requestId)
+        .filter(Boolean));
+      let outboxChanged = false;
+      [...messageOutbox.entries()].forEach(([messageId, entry]) => {
+        if (entry.userId !== user.id) return;
+        if (committedRequestIds.has(entry.requestId)) {
+          messageOutbox.delete(messageId);
+          outboxChanged = true;
+          return;
+        }
+        if (!(state.chats || []).some((message) => message.id === messageId)) {
+          state.chats.push({
+            id: messageId,
+            productId: entry.productId,
+            from: entry.userId,
+            to: entry.peerId,
+            text: entry.text,
+            createdAt: entry.createdAt,
+            requestId: entry.requestId,
+            pending: true,
+            failed: Boolean(entry.failed)
+          });
+        }
+      });
+      if (outboxChanged) persistMessageOutbox();
+    }
+
+    function isAmbiguousMessageError(error) {
+      return !Number(error?.status) || Number(error.status) >= 500;
+    }
+
+    function markMessageOutboxFailed(messageId) {
+      const entry = messageOutbox.get(messageId);
+      if (!entry) return;
+      entry.failed = true;
+      entry.attempts = Number(entry.attempts || 0) + 1;
+      entry.nextRetryAt = Date.now() + Math.min(30_000, 3_000 * (2 ** Math.min(entry.attempts - 1, 4)));
+      messageOutbox.set(messageId, entry);
+      if (currentUser()?.id === entry.userId) {
+        const message = (state.chats || []).find((item) => item.id === messageId && item.from === entry.userId);
+        if (message) {
+          message.pending = true;
+          message.failed = true;
+        }
+        renderMessages();
+        if (activeChat) renderChat();
+      }
+      persistMessageOutbox();
+    }
+
+    async function retryMessageOutboxEntry(messageId, { manual = false } = {}) {
+      const entry = messageOutbox.get(messageId);
+      const user = currentUser();
+      if (!entry || !user || entry.userId !== user.id || messageOutboxRetrying.has(messageId) || !navigator.onLine) return;
+      messageOutboxRetrying.add(messageId);
+      entry.failed = false;
+      entry.nextRetryAt = 0;
+      messageOutbox.set(messageId, entry);
+      const pendingMessage = (state.chats || []).find((message) => message.id === messageId);
+      if (pendingMessage) {
+        pendingMessage.pending = true;
+        pendingMessage.failed = false;
+      }
+      persistMessageOutbox();
+      renderMessages();
+      if (activeChat) renderChat();
+      try {
+        const result = await postChatMessageWithRetry({
+          productId: entry.productId,
+          peerId: entry.peerId,
+          text: entry.text
+        }, entry.requestId);
+        removeMessageOutboxEntry(messageId);
+        if (currentUser()?.id === entry.userId) mergeIncomingMessages([result.message]);
+      } catch (error) {
+        if (isAmbiguousMessageError(error)) {
+          markMessageOutboxFailed(messageId);
+          if (manual && currentUser()?.id === entry.userId) showToast('发送状态未确认，将继续自动重试');
+        } else {
+          removeMessageOutboxEntry(messageId);
+          if (currentUser()?.id === entry.userId) {
+            removePendingMessage(messageId);
+            if (manual) showToast(error.message);
+          }
+        }
+      } finally {
+        messageOutboxRetrying.delete(messageId);
+      }
+    }
+
+    function retryPendingMessageOutbox() {
+      const user = currentUser();
+      if (!user || !navigator.onLine) return;
+      const entry = [...messageOutbox.values()].find((item) =>
+        item.userId === user.id && !messageOutboxRetrying.has(item.id) && Number(item.nextRetryAt || 0) <= Date.now()
+      );
+      if (entry) retryMessageOutboxEntry(entry.id);
+    }
+
+    function setMessageConnectionState(mode) {
+      const copy = {
+        signedOut: '登录后开启消息同步',
+        local: '当前使用本地演示数据',
+        connecting: '正在连接消息服务',
+        live: '消息实时同步中',
+        polling: '实时连接中断，正在每3秒自动重试',
+        offline: '网络不可用，恢复后自动重试'
+      }[mode] || '正在连接消息服务';
+      [messageConnectionStatus, chatConnectionStatus].forEach((element) => {
+        if (!element) return;
+        if (element.dataset.syncMode === mode) return;
+        element.dataset.syncMode = mode;
+        element.textContent = copy;
+        element.classList.remove('is-live', 'is-retrying', 'is-offline');
+        if (mode === 'live') element.classList.add('is-live');
+        if (mode === 'connecting' || mode === 'polling') element.classList.add('is-retrying');
+        if (mode === 'offline') element.classList.add('is-offline');
+      });
+    }
+
+    function fallbackMessageCursor(message) {
+      const time = new Date(Number(message.createdAt || 0)).toISOString().replace(/Z$/, '000Z');
+      return `${time}|${String(message.id || '')}`;
+    }
+
+    function compareMessageCursors(left, right) {
+      const leftValue = String(left || EMPTY_MESSAGE_CURSOR);
+      const rightValue = String(right || EMPTY_MESSAGE_CURSOR);
+      const leftSeparator = leftValue.lastIndexOf('|');
+      const rightSeparator = rightValue.lastIndexOf('|');
+      const leftTime = leftValue.slice(0, leftSeparator + 1);
+      const rightTime = rightValue.slice(0, rightSeparator + 1);
+      if (leftTime !== rightTime) return leftTime > rightTime ? 1 : -1;
+      const leftId = leftValue.slice(leftSeparator + 1);
+      const rightId = rightValue.slice(rightSeparator + 1);
+      return leftId === rightId ? 0 : leftId > rightId ? 1 : -1;
+    }
+
+    function latestMessageCursor(messages = state.chats || []) {
+      return messages.reduce((latest, message) => {
+        if (message.pending || message.failed) return latest;
+        const cursor = message.cursor || fallbackMessageCursor(message);
+        return compareMessageCursors(cursor, latest) > 0 ? cursor : latest;
+      }, EMPTY_MESSAGE_CURSOR);
+    }
+
+    function mergeIncomingMessages(incomingMessages) {
+      const incoming = Array.isArray(incomingMessages) ? incomingMessages : [];
+      if (!incoming.length) return false;
+      const requestIds = new Set(incoming.map((message) => message.requestId).filter(Boolean));
+      removeMessageOutboxByRequestIds(requestIds);
+      const next = (state.chats || []).filter((message) => !(message.pending && requestIds.has(message.requestId)));
+      const byId = new Map(next.map((message, index) => [message.id, index]));
+      let changed = next.length !== (state.chats || []).length;
+      incoming.forEach((message) => {
+        const cursor = message.cursor || fallbackMessageCursor(message);
+        if (compareMessageCursors(cursor, messageSyncCursor) > 0) messageSyncCursor = cursor;
+        if (byId.has(message.id)) {
+          next[byId.get(message.id)] = { ...next[byId.get(message.id)], ...message, pending: false };
+          return;
+        }
+        byId.set(message.id, next.length);
+        next.push({ ...message, pending: false });
+        changed = true;
+      });
+      if (!changed) return false;
+      state.chats = next.sort((a, b) => a.createdAt - b.createdAt);
+      saveState();
+      renderMessages();
+      if (activeChat) renderChat();
+      updateMessageBadge();
+      return true;
+    }
+
+    function removePendingMessage(messageId) {
+      const before = (state.chats || []).length;
+      state.chats = (state.chats || []).filter((message) => message.id !== messageId);
+      if (state.chats.length !== before) {
+        renderMessages();
+        if (activeChat) renderChat();
+      }
+    }
+
+    async function syncNewMessages() {
+      const user = currentUser();
+      if (!USE_API || !user) return;
+      if (visibilityReconcileRequest) {
+        messageSyncQueued = true;
+        return;
+      }
+      if (messageSyncInFlight) {
+        messageSyncQueued = true;
+        return;
+      }
+      const generation = messageSyncGeneration;
+      const syncUserId = user.id;
+      messageSyncInFlight = true;
+      try {
+        const result = await apiRequest(`/api/messages?after=${encodeURIComponent(messageSyncCursor)}`);
+        if (generation !== messageSyncGeneration || currentUser()?.id !== syncUserId) return;
+        mergeIncomingMessages(result.messages);
+        if (compareMessageCursors(result.nextCursor, messageSyncCursor) > 0) messageSyncCursor = result.nextCursor;
+        lastMessageSyncAt = Date.now();
+        if (window.EventSource && messageEventSource?.readyState === window.EventSource.OPEN) setMessageConnectionState('live');
+        else setMessageConnectionState(navigator.onLine ? 'polling' : 'offline');
+        if (result.hasMore) messageSyncQueued = true;
+      } catch (error) {
+        if (generation !== messageSyncGeneration) return;
+        if (error.status === 401) {
+          await handleMessageSessionExpired();
+        } else {
+          setMessageConnectionState(navigator.onLine ? 'polling' : 'offline');
+        }
+      } finally {
+        if (generation !== messageSyncGeneration) return;
+        messageSyncInFlight = false;
+        if (messageSyncQueued) {
+          messageSyncQueued = false;
+          window.setTimeout(syncNewMessages, 0);
+        }
+      }
+    }
+
+    function stopMessageSync(nextState = 'signedOut') {
+      messageSyncGeneration += 1;
+      if (messageEventSource) {
+        messageEventSource.onopen = null;
+        messageEventSource.onerror = null;
+        messageEventSource.close();
+      }
+      messageEventSource = null;
+      messageEventUserId = '';
+      messageSyncInFlight = false;
+      messageSyncQueued = false;
+      setMessageConnectionState(nextState);
+    }
+
+    function startMessageSync() {
+      const user = currentUser();
+      if (!USE_API) {
+        stopMessageSync('local');
+        return;
+      }
+      if (!user) {
+        stopMessageSync('signedOut');
+        return;
+      }
+      if (messageCursorUserId !== user.id) {
+        messageCursorUserId = user.id;
+        messageSyncCursor = latestMessageCursor();
+      } else {
+        const latestCursor = latestMessageCursor();
+        if (compareMessageCursors(latestCursor, messageSyncCursor) > 0) messageSyncCursor = latestCursor;
+      }
+      if (messageEventUserId === user.id && messageEventSource && messageEventSource.readyState !== window.EventSource.CLOSED) {
+        return;
+      }
+      stopMessageSync(navigator.onLine ? 'connecting' : 'offline');
+      messageEventUserId = user.id;
+      if (!('EventSource' in window) || !navigator.onLine) {
+        setMessageConnectionState(navigator.onLine ? 'polling' : 'offline');
+        return;
+      }
+      const source = new EventSource('/api/events');
+      messageEventSource = source;
+      source.onopen = async () => {
+        if (messageEventSource !== source) return;
+        setMessageConnectionState('live');
+        const reconciled = await hydrateFromServer({ invalidateMessageSync: true, silent: true });
+        if (!reconciled && messageEventSource === source) syncNewMessages();
+      };
+      source.addEventListener('message_available', () => {
+        if (messageEventSource === source) syncNewMessages();
+      });
+      source.addEventListener('visibility_changed', () => {
+        if (messageEventSource === source) hydrateFromServer({ invalidateMessageSync: true, silent: true });
+      });
+      source.addEventListener('session_expired', () => {
+        if (messageEventSource === source) handleMessageSessionExpired();
+      });
+      source.onerror = () => {
+        if (messageEventSource !== source) return;
+        setMessageConnectionState(navigator.onLine ? 'polling' : 'offline');
+      };
+    }
+
+    async function hydrateFromServer({ invalidateMessageSync = false, silent = false } = {}) {
+      if (!USE_API) return false;
+      const requestSequence = ++bootstrapRequestSequence;
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 10_000);
+      let bootstrapApplied = false;
+      if (invalidateMessageSync) {
+        visibilityReconcileRequest = requestSequence;
+        lastVisibilityReconcileAt = Date.now();
+        messageSyncGeneration += 1;
+        messageSyncInFlight = false;
+        messageSyncQueued = false;
+      }
+      try {
+        const remote = await apiRequest('/api/bootstrap', { signal: controller.signal });
+        if (requestSequence !== bootstrapRequestSequence) return false;
         if (remote && Array.isArray(remote.products)) {
+          const previousUserId = currentUser()?.id || '';
           const currentUserId = remote.currentUser?.id || '';
+          if (previousUserId && previousUserId !== currentUserId) clearMessageOutboxForUser(previousUserId);
           state = { ...structuredClone(seedState), ...remote, currentUserId };
           if (remote.currentUser) state.users[currentUserId] = remote.currentUser;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          restoreMessageOutboxForCurrentUser();
+          messageCursorUserId = currentUserId;
+          messageSyncCursor = latestMessageCursor(state.chats);
+          lastVisibilityReconcileAt = Date.now();
+          saveState();
           renderAll();
+          if (activeChat) {
+            const activeProduct = state.products.find((product) => product.id === activeChat.productId);
+            const activePeer = state.users[activeChat.peerId];
+            if (!activeProduct || !activePeer) {
+              activeChat = null;
+              chatProductBar.replaceChildren();
+              chatLog.innerHTML = '<div class="empty-state">该会话已不可用。</div>';
+              if (document.getElementById('chat').classList.contains('active')) switchTab('messages');
+            } else {
+              renderChat();
+            }
+          }
+          startMessageSync();
+          retryPendingMessageOutbox();
+          bootstrapApplied = true;
+          return true;
         }
       } catch {
-        showToast('后端连接失败，使用本地数据');
+        if (requestSequence !== bootstrapRequestSequence) return false;
+        if (!silent) showToast('后端连接失败，使用本地数据');
+        setMessageConnectionState(currentUser() ? (navigator.onLine ? 'polling' : 'offline') : 'signedOut');
+      } finally {
+        window.clearTimeout(timeout);
+        const supersededVisibilityApplied = visibilityReconcileRequest &&
+          bootstrapApplied && requestSequence >= visibilityReconcileRequest;
+        const latestVisibilityRequestFinished = visibilityReconcileRequest &&
+          requestSequence === bootstrapRequestSequence && requestSequence >= visibilityReconcileRequest;
+        if (supersededVisibilityApplied || latestVisibilityRequestFinished) {
+          visibilityReconcileRequest = 0;
+          if (messageSyncQueued) {
+            messageSyncQueued = false;
+            window.setTimeout(syncNewMessages, 0);
+          }
+        }
       }
+      return false;
     }
 
     function currentUser() {
@@ -2225,6 +2681,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       if (tabId === 'profile') renderProfile();
       if (tabId === 'list') renderList();
       if (tabId === 'admin') loadAdminDashboard();
+      if ((tabId === 'messages' || tabId === 'chat') && currentUser()) syncNewMessages();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -3352,29 +3809,126 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       chatLog.innerHTML = messages.length
         ? messages.map((message, index) => `
             ${index === 0 ? `<span class="chat-time">${formatDate(message.createdAt)}</span>` : ''}
-            <div class="chat-bubble ${message.from === user.id ? 'mine' : ''}">${escapeHtml(message.text)}</div>
+            <div class="chat-bubble ${message.from === user.id ? 'mine' : ''} ${message.pending ? 'is-pending' : ''} ${message.failed ? 'is-failed' : ''}">
+              ${escapeHtml(message.text)}
+              ${message.failed
+                ? `<span class="chat-send-state">发送状态未确认</span><button class="chat-retry-message" type="button" data-retry-message="${escapeAttribute(message.id)}">重新发送</button>`
+                : message.pending ? '<span class="chat-send-state">发送中</span>' : ''}
+            </div>
           `).join('')
         : '<div class="empty-state">还没有聊天记录，先发一句约个时间吧。</div>';
       chatLog.scrollTop = chatLog.scrollHeight;
     }
 
+    async function postChatMessageWithRetry(payload, requestId) {
+      let lastError = null;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          return await apiRequest('/api/messages', {
+            method: 'POST',
+            headers: { 'Idempotency-Key': requestId },
+            body: JSON.stringify(payload)
+          });
+        } catch (error) {
+          lastError = error;
+          const retryable = !Number(error.status) || Number(error.status) >= 500;
+          if (!retryable || attempt === 1) break;
+          await new Promise((resolve) => window.setTimeout(resolve, 700));
+        }
+      }
+      throw lastError;
+    }
+
     async function sendChatMessage() {
       const user = currentUser();
       const text = chatInput.value.trim();
-      if (!user || !activeChat || !text) return;
+      if (!user || !activeChat || !text || sendChat.disabled) return;
       if (!ensureVerified()) return;
+      const sendUserId = user.id;
+      const sendContext = { productId: activeChat.productId, peerId: activeChat.peerId };
+      const requestId = uid('message_');
+      const optimisticId = `pending_${requestId}`;
+      const createdAt = Date.now();
+      const payload = { ...sendContext, text };
+      messageOutbox.set(optimisticId, {
+        id: optimisticId,
+        userId: sendUserId,
+        ...sendContext,
+        text,
+        requestId,
+        createdAt,
+        failed: false,
+        attempts: 0,
+        nextRetryAt: 0
+      });
+      messageOutboxRetrying.add(optimisticId);
+      persistMessageOutbox();
+      state.chats.push({
+        id: optimisticId,
+        ...payload,
+        from: sendUserId,
+        to: sendContext.peerId,
+        createdAt,
+        requestId,
+        pending: true
+      });
+      chatInput.value = '';
+      chatInput.disabled = true;
+      sendChat.disabled = true;
+      sendChat.textContent = '发送中';
+      renderChat();
+      renderMessages();
       try {
-        await apiRequest('/api/messages', {
-          method: 'POST',
-          body: JSON.stringify({ productId: activeChat.productId, peerId: activeChat.peerId, text })
-        });
-        chatInput.value = '';
-        await hydrateFromServer();
-        renderChat();
-        renderMessages();
+        const result = await postChatMessageWithRetry(payload, requestId);
+        removeMessageOutboxEntry(optimisticId);
+        if (currentUser()?.id === sendUserId) mergeIncomingMessages([result.message]);
       } catch (error) {
-        showToast(error.message);
+        if (isAmbiguousMessageError(error)) {
+          markMessageOutboxFailed(optimisticId);
+          if (currentUser()?.id === sendUserId) showToast('发送状态未确认，网络恢复后会自动重试');
+        } else {
+          removeMessageOutboxEntry(optimisticId);
+          if (currentUser()?.id === sendUserId) {
+            removePendingMessage(optimisticId);
+            const stillInConversation = activeChat?.productId === sendContext.productId && activeChat?.peerId === sendContext.peerId;
+            if (stillInConversation && !chatInput.value) chatInput.value = text;
+            showToast(error.message);
+          }
+        }
+      } finally {
+        messageOutboxRetrying.delete(optimisticId);
+        chatInput.disabled = false;
+        sendChat.disabled = false;
+        sendChat.textContent = '发送';
+        const stillInConversation = currentUser()?.id === sendUserId &&
+          activeChat?.productId === sendContext.productId && activeChat?.peerId === sendContext.peerId;
+        if (stillInConversation) chatInput.focus();
       }
+    }
+
+    async function handleMessageSessionExpired() {
+      if (handlingSessionExpired) return;
+      handlingSessionExpired = true;
+      const previousUserId = currentUser()?.id || '';
+      stopMessageSync('signedOut');
+      if (previousUserId) clearMessageOutboxForUser(previousUserId);
+      state.currentUserId = '';
+      state.chats = [];
+      state.intents = [];
+      state.taskApplications = [];
+      state.notifications = [];
+      state.blocks = [];
+      if (previousUserId && state.users[previousUserId]) {
+        const previous = state.users[previousUserId];
+        state.users[previousUserId] = { id: previous.id, name: previous.name, campus: previous.campus };
+      }
+      activeChat = null;
+      saveState();
+      renderAll();
+      if (document.getElementById('chat').classList.contains('active')) switchTab('messages');
+      showToast('登录已失效，请重新登录');
+      await hydrateFromServer();
+      handlingSessionExpired = false;
     }
 
     async function submitTaskAction(task, action) {
@@ -3868,16 +4422,51 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     chatInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') sendChatMessage();
     });
+    chatLog.addEventListener('click', (event) => {
+      const retryButton = event.target.closest('[data-retry-message]');
+      if (retryButton) retryMessageOutboxEntry(retryButton.dataset.retryMessage, { manual: true });
+    });
 
     renderAll();
+    setMessageConnectionState(currentUser() ? (USE_API ? 'connecting' : 'local') : 'signedOut');
     (async () => {
       await hydrateFromServer();
       renderAll();
     })();
     window.setInterval(() => {
+      if (!currentUser() || document.visibilityState !== 'visible') return;
+      const realtimeOpen = window.EventSource && messageEventSource?.readyState === window.EventSource.OPEN;
+      if (!realtimeOpen || Date.now() - lastMessageSyncAt > 30_000) syncNewMessages();
+      if (Date.now() - lastVisibilityReconcileAt > 30_000) {
+        hydrateFromServer({ invalidateMessageSync: true, silent: true });
+      }
+      retryPendingMessageOutbox();
+    }, 3_000);
+    window.setInterval(() => {
       renderTasks();
       if (currentUser()) renderProfile();
     }, 60 * 1000);
+    window.addEventListener('online', () => {
+      const userId = currentUser()?.id;
+      if (userId) {
+        messageOutbox.forEach((entry, messageId) => {
+          if (entry.userId !== userId) return;
+          messageOutbox.set(messageId, { ...entry, nextRetryAt: 0 });
+        });
+        persistMessageOutbox();
+      }
+      startMessageSync();
+      syncNewMessages();
+      retryPendingMessageOutbox();
+    });
+    window.addEventListener('offline', () => setMessageConnectionState('offline'));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && currentUser()) {
+        startMessageSync();
+        syncNewMessages();
+      }
+    });
+    window.addEventListener('beforeunload', () => messageEventSource?.close());
   </script>
 </body>
 </html>
