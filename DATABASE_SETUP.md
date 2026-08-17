@@ -28,8 +28,8 @@ GitHub Actions 需要以下 Secrets：
 
 ## 自动部署会执行的动作
 
-1. 安装 Node 依赖。
-2. 使用 `MIGRATION_DATABASE_URL` 按文件名顺序执行尚未应用的迁移。`008_identity_notifications_and_moderation.sql` 增加校内邮箱认证令牌、任务申请、通知、屏蔽和举报数据结构，并只把上线前明确的三个初始账号标记为 `legacy` 认证；`009_least_privilege_app_role.sql` 创建受限应用角色、授权和 RLS policies。
+1. 安装 Node 依赖并运行代码检查；已配置 SMTP 时，在执行迁移与替换线上版本前验证 SMTP 连接和认证，验证失败则终止部署。
+2. 使用 `MIGRATION_DATABASE_URL` 按文件名顺序执行尚未应用的迁移。`008_identity_notifications_and_moderation.sql` 增加校内邮箱认证令牌、任务申请、通知、屏蔽和举报数据结构，并只把上线前明确的三个初始账号标记为 `legacy` 认证；`009_least_privilege_app_role.sql` 创建受限应用角色、授权和 RLS policies；`010_student_email_domain.sql` 把学生邮箱后缀修正为 `@emails.bjut.edu.cn`，保留旧 `@bjut.edu.cn` 绑定的邮箱名前缀，并要求通过邮件方式认证的账号重新验证，同时清除旧地址对应的验证码与冷却记录。
 3. 首次部署前复制 `auth.json`、`db.json` 到 `data/backups/pre-postgres-*`。
 4. 把 JSON 用户、商品、任务、意向和聊天迁移到 PostgreSQL。
 5. 创建 `data/.postgres-migrated` 标记，防止旧 JSON 在后续部署中覆盖数据库。

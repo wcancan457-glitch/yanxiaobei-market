@@ -343,8 +343,18 @@ async function issueAuthToken({ userId, purpose, tokenHash, expiresAt }) {
        order by created_at desc limit 1`,
       [userId, purpose]
     );
-    if (recent.rows[0] && Date.now() - new Date(recent.rows[0].created_at).getTime() < 60_000) {
-      throw new AppError(429, '验证码发送过于频繁，请一分钟后再试', 'code_rate_limited');
+    if (recent.rows[0]) {
+      const elapsed = Date.now() - new Date(recent.rows[0].created_at).getTime();
+      if (elapsed < 60_000) {
+        const retryAfter = Math.max(1, Math.ceil((60_000 - elapsed) / 1000));
+        const error = new AppError(
+          429,
+          `验证码刚刚已经发送，请 ${retryAfter} 秒后再试，并检查垃圾邮件箱`,
+          'code_rate_limited'
+        );
+        error.retryAfter = retryAfter;
+        throw error;
+      }
     }
     await client.query(
       `insert into auth_tokens (user_id, purpose, token_hash, expires_at)

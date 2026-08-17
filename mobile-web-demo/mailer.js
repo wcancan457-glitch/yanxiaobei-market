@@ -50,4 +50,14 @@ async function sendCode({ to, purpose, code }) {
   });
 }
 
-module.exports = { configured, sendCode };
+async function verifyConnection() {
+  const client = getTransporter();
+  if (!client) {
+    const error = new Error('邮件发送服务尚未配置');
+    error.code = 'mail_not_configured';
+    throw error;
+  }
+  await client.verify();
+}
+
+module.exports = { configured, sendCode, verifyConnection };

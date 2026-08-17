@@ -688,6 +688,13 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 }
 .verification-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .verification-actions .mini-btn { min-height: 44px; }
+.verification-hint {
+  margin: -1px 0 0;
+  color: #486273;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
 .my-product-actions .mini-btn {
   min-height: 44px;
   padding: 0 11px;
@@ -1691,9 +1698,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           <input id="studentPassword" type="password" value="" autocomplete="current-password">
         </div>
         <div class="field" id="schoolEmailField" hidden>
-          <label for="schoolEmail">北工大校内邮箱</label>
-          <input id="schoolEmail" type="email" value="" autocomplete="email" placeholder="name@bjut.edu.cn">
-          <p class="field-hint">用于校园身份认证与密码找回；没有校内邮箱时可注册后联系管理员人工核验。</p>
+          <label for="schoolEmail">北工大学生邮箱</label>
+          <input id="schoolEmail" type="email" value="" autocomplete="email"
+            placeholder="你的邮箱名@emails.bjut.edu.cn" aria-describedby="schoolEmailHint">
+          <p class="field-hint" id="schoolEmailHint">邮箱名前缀由学生自行设置，固定后缀为 @emails.bjut.edu.cn；用于身份认证与密码找回。</p>
         </div>
         <div class="field" id="authCodeField" hidden>
           <label for="authCode">邮箱验证码</label>
@@ -1744,12 +1752,19 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   <div class="toast" id="toast" role="status" aria-live="polite">已发送</div>
 
   <script src="student-id.js"></script>
+  <script src="school-email.js"></script>
   <script>
     const {
       FORMAT_MESSAGE: STUDENT_ID_FORMAT_MESSAGE,
       normalizeStudentId,
       validStudentId
     } = window.YanxiaobeiStudentId;
+    const {
+      SCHOOL_EMAIL_DOMAIN,
+      FORMAT_MESSAGE: SCHOOL_EMAIL_FORMAT_MESSAGE,
+      normalizeSchoolEmail,
+      validSchoolEmail
+    } = window.YanxiaobeiSchoolEmail;
     const STORAGE_KEY = 'yanxiaobei-campus-market-mvp-v1';
     const USE_API = location.protocol === 'http:' || location.protocol === 'https:';
     const phoneShell = document.querySelector('.phone-shell');
@@ -2014,7 +2029,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       blocks: [],
       intents: [],
       chats: [],
-      authCapabilities: { schoolEmailDomain: 'bjut.edu.cn', emailDeliveryConfigured: false }
+      authCapabilities: { schoolEmailDomain: SCHOOL_EMAIL_DOMAIN, emailDeliveryConfigured: false }
     };
 
     let state = loadState();
@@ -2045,6 +2060,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         const error = new Error(data.error || '操作失败，请稍后重试');
         error.status = res.status;
         error.code = data.code || 'request_failed';
+        error.retryAfter = Number(data.retryAfter || res.headers.get('Retry-After') || 0);
         throw error;
       }
       return data;
@@ -2166,6 +2182,33 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       showToast.timer = window.setTimeout(() => toast.classList.remove('show'), 1800);
     }
 
+    let verificationCooldownUntil = 0;
+    let verificationCooldownTimer = null;
+
+    function syncVerificationCooldownButton() {
+      window.clearInterval(verificationCooldownTimer);
+      const button = profileList.querySelector('[data-action="send-verification-code"]');
+      if (!button) return;
+      const update = () => {
+        const remaining = Math.max(0, Math.ceil((verificationCooldownUntil - Date.now()) / 1000));
+        button.disabled = remaining > 0;
+        button.textContent = remaining > 0 ? `${remaining}秒后可重发` : '发送验证码';
+        if (!remaining) window.clearInterval(verificationCooldownTimer);
+      };
+      update();
+      if (verificationCooldownUntil > Date.now()) {
+        verificationCooldownTimer = window.setInterval(update, 1000);
+      }
+    }
+
+    function startVerificationCooldown(seconds = 60) {
+      verificationCooldownUntil = Math.max(
+        verificationCooldownUntil,
+        Date.now() + Math.max(1, Number(seconds) || 60) * 1000
+      );
+      syncVerificationCooldownButton();
+    }
+
     function switchTab(tabId) {
       if (tabId === 'admin' && !currentUser()?.isAdmin) {
         showToast('只有管理员可以进入管理后台');
@@ -2213,7 +2256,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         },
         register: {
           title: '注册学号账号',
-          description: '注册后需要通过 @bjut.edu.cn 校内邮箱验证码或管理员人工核验，才能发布和接单。',
+          description: '注册后需要通过 @emails.bjut.edu.cn 学生邮箱验证码或管理员人工核验，才能发布和接单。',
           confirm: '注册并登录',
           switch: '已有账号？返回登录'
         },
@@ -2677,12 +2720,13 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       ` : `
         <article class="profile-card verification-card">
           <h3>完成校园身份认证</h3>
-          <p>${emailReady ? '使用 @bjut.edu.cn 校内邮箱接收验证码；也可以联系管理员人工核验。' : '邮件发送服务正在配置。你可以先填写校内邮箱并联系管理员人工核验。'}</p>
+          <p>${emailReady ? '使用 @emails.bjut.edu.cn 学生邮箱接收验证码；也可以联系管理员人工核验。' : '邮件发送服务正在配置。你可以先填写学生邮箱并联系管理员人工核验。'}</p>
           <div class="verification-form">
             <div class="verification-actions">
-              <input id="profileSchoolEmail" type="email" value="${escapeHtml(user.schoolEmail || '')}" placeholder="name@bjut.edu.cn" aria-label="北工大校内邮箱">
+              <input id="profileSchoolEmail" type="email" value="${escapeHtml(user.schoolEmail || '')}" placeholder="你的邮箱名@emails.bjut.edu.cn" aria-label="北工大学生邮箱" aria-describedby="profileEmailHint">
               <button class="mini-btn primary" data-action="${emailReady ? 'send-verification-code' : 'save-school-email'}">${emailReady ? '发送验证码' : '保存邮箱'}</button>
             </div>
+            <p class="verification-hint" id="profileEmailHint">@ 前的邮箱名由你自行设置，只有后缀 @emails.bjut.edu.cn 是固定的。</p>
             ${emailReady ? `
               <div class="verification-actions">
                 <input id="profileVerificationCode" inputmode="numeric" maxlength="6" placeholder="6位验证码" aria-label="身份验证码">
@@ -2723,6 +2767,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         <article class="profile-card"><h3>账号与安全</h3><p>学号和校内邮箱不向普通用户展示；密码只保存加盐哈希。</p></article>
         <article class="profile-card"><h3>退出登录</h3><p><button class="mini-btn danger" data-action="logout">退出当前学号</button></p></article>
       `;
+      syncVerificationCooldownButton();
     }
 
     function formatAdminDate(timestamp, fallback = '从未登录') {
@@ -3508,11 +3553,15 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       studentIdInput.setAttribute('aria-invalid', 'false');
     });
 
+    schoolEmailInput.addEventListener('input', () => {
+      schoolEmailInput.setAttribute('aria-invalid', 'false');
+    });
+
     confirmLogin.addEventListener('click', async () => {
       const id = normalizeStudentId(studentIdInput.value);
       studentIdInput.value = id;
       const password = studentPassword.value;
-      const email = schoolEmailInput.value.trim().toLowerCase();
+      const email = normalizeSchoolEmail(schoolEmailInput.value);
       const code = authCodeInput.value.trim();
       if (!id) {
         showToast('请输入学号');
@@ -3528,7 +3577,12 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         return;
       }
       if (['forgot', 'reset'].includes(loginMode) && !email) {
-        showToast('请输入已认证的北工大校内邮箱');
+        showToast('请输入已认证的北工大学生邮箱');
+        return;
+      }
+      if (email && ['register', 'forgot', 'reset'].includes(loginMode) && !validSchoolEmail(email)) {
+        schoolEmailInput.setAttribute('aria-invalid', 'true');
+        showToast(SCHOOL_EMAIL_FORMAT_MESSAGE);
         return;
       }
       if (loginMode === 'reset' && !/^\d{6}$/.test(code)) {
@@ -3568,6 +3622,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           closeLogin();
           renderAll();
           if (completedMode === 'register') {
+            if (result.verificationSent) startVerificationCooldown(60);
             switchTab('profile');
             showToast(result.verificationSent ? '注册成功，验证码已发送到校内邮箱' : '注册成功，请完成校园身份认证');
           } else {
@@ -3638,22 +3693,32 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           showToast(error.message);
         }
       } else if (action === 'send-verification-code') {
-        const email = document.getElementById('profileSchoolEmail')?.value.trim();
+        const email = normalizeSchoolEmail(document.getElementById('profileSchoolEmail')?.value);
+        if (!validSchoolEmail(email)) {
+          showToast(SCHOOL_EMAIL_FORMAT_MESSAGE);
+          return;
+        }
         button.disabled = true;
         try {
-          await apiRequest('/api/auth/request-verification', {
+          const result = await apiRequest('/api/auth/request-verification', {
             method: 'POST',
             body: JSON.stringify({ schoolEmail: email })
           });
+          startVerificationCooldown(result.retryAfter || 60);
           await hydrateFromServer();
-          showToast('验证码已发送到校内邮箱');
+          showToast(result.message);
         } catch (error) {
+          if (error.retryAfter > 0 && error.retryAfter <= 120) startVerificationCooldown(error.retryAfter);
           showToast(error.message);
         } finally {
-          button.disabled = false;
+          syncVerificationCooldownButton();
         }
       } else if (action === 'save-school-email') {
-        const email = document.getElementById('profileSchoolEmail')?.value.trim();
+        const email = normalizeSchoolEmail(document.getElementById('profileSchoolEmail')?.value);
+        if (!validSchoolEmail(email)) {
+          showToast(SCHOOL_EMAIL_FORMAT_MESSAGE);
+          return;
+        }
         button.disabled = true;
         try {
           const result = await apiRequest('/api/auth/school-email', {

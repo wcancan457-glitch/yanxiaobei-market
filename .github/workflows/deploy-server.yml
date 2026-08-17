@@ -77,6 +77,7 @@ jobs:
             cd "$RELEASE_DIR"
             npm ci --omit=dev
             npm run check
+            npm run mail:verify
             export DATABASE_URL="$MIGRATION_DATABASE_URL"
             npm run db:migrate
             npm run db:configure-role

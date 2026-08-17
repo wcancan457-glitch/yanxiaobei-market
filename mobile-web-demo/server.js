@@ -10,6 +10,12 @@ const {
   normalizeStudentId,
   validStudentId
 } = require('./student-id');
+const {
+  SCHOOL_EMAIL_DOMAIN,
+  FORMAT_MESSAGE: SCHOOL_EMAIL_FORMAT_MESSAGE,
+  normalizeSchoolEmail,
+  validSchoolEmail
+} = require('./school-email');
 
 const root = __dirname;
 const port = Number(process.env.PORT || 5177);
@@ -61,7 +67,11 @@ function enforceRateLimit(req, scope, limit, windowMs, subject = '') {
   const key = `${scope}:${identity}`;
   const active = (rateBuckets.get(key) || []).filter((timestamp) => now - timestamp < windowMs);
   if (active.length >= limit) {
-    throw new db.AppError(429, '操作过于频繁，请稍后再试', 'rate_limited');
+    const retryAfter = Math.max(1, Math.ceil((active[0] + windowMs - now) / 1000));
+    const waitText = retryAfter < 60 ? `${retryAfter} 秒` : `约 ${Math.ceil(retryAfter / 60)} 分钟`;
+    const error = new db.AppError(429, `操作次数已达上限，请在${waitText}后再试`, 'rate_limited');
+    error.retryAfter = retryAfter;
+    throw error;
   }
   active.push(now);
   rateBuckets.set(key, active);
@@ -184,11 +194,9 @@ async function requireVerifiedUser(req) {
 }
 
 function schoolEmail(value, optional = false) {
-  const email = String(value || '').trim().toLowerCase().slice(0, 120);
+  const email = normalizeSchoolEmail(value);
   if (!email && optional) return '';
-  if (!/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@bjut\.edu\.cn$/i.test(email)) {
-    throw new db.AppError(400, '请输入有效的 @bjut.edu.cn 校内邮箱');
-  }
+  if (!validSchoolEmail(email)) throw new db.AppError(400, SCHOOL_EMAIL_FORMAT_MESSAGE);
   return email;
 }
 
@@ -349,8 +357,8 @@ async function handleApi(req, res, requestUrl) {
     enforceRateLimit(req, 'register-ip', 50, 60 * 60 * 1000);
     enforceRateLimit(req, 'register-account', 5, 60 * 60 * 1000, studentId);
     const password = String(body.password || '');
-    const registeredEmail = schoolEmail(body.schoolEmail, true) || null;
     if (!validStudentId(studentId)) throw new db.AppError(400, STUDENT_ID_FORMAT_MESSAGE);
+    const registeredEmail = schoolEmail(body.schoolEmail, true) || null;
     validatePassword(password);
     const user = await db.createUser({
       studentId,
@@ -410,14 +418,14 @@ async function handleApi(req, res, requestUrl) {
 
   if (pathname === '/api/auth/request-verification' && req.method === 'POST') {
     const user = await requireUser(req);
-    enforceRateLimit(req, 'request-verification', 5, 60 * 60 * 1000, user.id);
     if (user.isVerified) throw new db.AppError(409, '该账号已经完成校园身份认证');
     const body = await readJsonBody(req);
     const email = schoolEmail(body.schoolEmail || user.schoolEmail);
+    enforceRateLimit(req, 'request-verification', 10, 60 * 60 * 1000, user.id);
     const updated = await db.updateSchoolEmail(user.id, email);
     const stored = await db.findUserByStudentId(updated.studentId);
     await sendAuthCode(stored, 'verify_email');
-    sendJson(res, 200, { ok: true, message: '验证码已发送到校内邮箱' });
+    sendJson(res, 200, { ok: true, message: '验证码已发送到学生邮箱，请检查收件箱和垃圾邮件', retryAfter: 60 });
     return true;
   }
 
@@ -457,10 +465,10 @@ async function handleApi(req, res, requestUrl) {
     }
     const body = await readJsonBody(req);
     const studentId = normalizeStudentId(body.studentId);
-    const email = schoolEmail(body.schoolEmail);
     enforceRateLimit(req, 'forgot-password-ip', 50, 60 * 60 * 1000);
     enforceRateLimit(req, 'forgot-password-account', 5, 60 * 60 * 1000, studentId);
     if (!validStudentId(studentId)) throw new db.AppError(400, STUDENT_ID_FORMAT_MESSAGE);
+    const email = schoolEmail(body.schoolEmail);
     const user = await db.findVerifiedUserForReset(studentId, email);
     if (user) await sendAuthCode(user, 'reset_password');
     sendJson(res, 200, { ok: true, message: '如果学号与已认证邮箱匹配，验证码会发送到该邮箱' });
@@ -473,12 +481,12 @@ async function handleApi(req, res, requestUrl) {
     }
     const body = await readJsonBody(req);
     const studentId = normalizeStudentId(body.studentId);
-    const email = schoolEmail(body.schoolEmail);
     enforceRateLimit(req, 'reset-password-ip', 100, 15 * 60 * 1000);
     enforceRateLimit(req, 'reset-password-account', 10, 15 * 60 * 1000, studentId);
     const code = String(body.code || '').trim();
     const nextPassword = String(body.newPassword || '');
     if (!validStudentId(studentId)) throw new db.AppError(400, STUDENT_ID_FORMAT_MESSAGE);
+    const email = schoolEmail(body.schoolEmail);
     if (!/^\d{6}$/.test(code)) throw new db.AppError(400, '请输入6位数字验证码');
     validatePassword(nextPassword);
     const user = await db.findVerifiedUserForReset(studentId, email);
@@ -500,7 +508,7 @@ async function handleApi(req, res, requestUrl) {
       ...state,
       currentUser: user,
       authCapabilities: {
-        schoolEmailDomain: 'bjut.edu.cn',
+        schoolEmailDomain: SCHOOL_EMAIL_DOMAIN,
         emailDeliveryConfigured
       }
     });
@@ -721,10 +729,14 @@ const server = http.createServer(async (req, res) => {
     } catch (error) {
       const status = Number(error.status) || 500;
       if (status >= 500) console.error(error);
+      if (status === 429 && Number(error.retryAfter) > 0) {
+        res.setHeader('Retry-After', String(Math.ceil(Number(error.retryAfter))));
+      }
       sendJson(res, status, {
         ok: false,
         error: status >= 500 ? '服务器暂时不可用，请稍后重试' : error.message,
-        code: error.code || 'server_error'
+        code: error.code || 'server_error',
+        ...(Number(error.retryAfter) > 0 ? { retryAfter: Math.ceil(Number(error.retryAfter)) } : {})
       });
     }
     return;

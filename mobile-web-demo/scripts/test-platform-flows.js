@@ -96,12 +96,12 @@ async function main() {
       `insert into users (student_id, name, campus, password_hash, school_email)
        values ($1, '治理流程测试用户', '平乐园校区', '!test', $2)
        returning id`,
-      [tempStudentId, `flow-${suffix}@bjut.edu.cn`]
+      [tempStudentId, `flow-${suffix}@emails.bjut.edu.cn`]
     );
     temporaryUserId = String(temporary.rows[0].id);
     let emailRaceRejected = false;
     try {
-      await db.markIdentityVerified(temporaryUserId, 'email', `other-${suffix}@bjut.edu.cn`);
+      await db.markIdentityVerified(temporaryUserId, 'email', `other-${suffix}@emails.bjut.edu.cn`);
     } catch (error) {
       emailRaceRejected = error.status === 409;
     }
