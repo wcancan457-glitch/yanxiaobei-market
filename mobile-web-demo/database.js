@@ -257,13 +257,15 @@ async function getBootstrap(userId = null) {
   };
 }
 
-async function createProduct(userId, input) {
+async function createProduct(userId, input, requestId) {
   const id = `p_${randomUUID()}`;
   const result = await query(
     `insert into products
       (id, title, category, campus, campus_text, price, location, description,
-       seller_id, image_url, image_class, symbol)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       seller_id, image_url, image_class, symbol, request_id)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+     on conflict (seller_id, request_id) where request_id is not null
+     do update set request_id = excluded.request_id
      returning *, (select name from users where id = seller_id) as seller_name`,
     [
       id,
@@ -277,7 +279,8 @@ async function createProduct(userId, input) {
       userId,
       input.image || null,
       input.imgClass || null,
-      input.symbol || null
+      input.symbol || null,
+      requestId
     ]
   );
   return productFromRow(result.rows[0]);
@@ -307,14 +310,16 @@ async function deleteProduct(userId, productId) {
   if (!result.rows[0]) throw new AppError(403, '无权删除该商品或商品正在交易');
 }
 
-async function createTask(userId, input) {
+async function createTask(userId, input, requestId) {
   const id = `t_${randomUUID()}`;
   const result = await query(
     `insert into tasks
-      (id, title, campus, campus_text, reward, location, description, publisher_id)
-     values ($1, $2, $3, $4, $5, $6, $7, $8)
+      (id, title, campus, campus_text, reward, location, description, publisher_id, request_id)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     on conflict (publisher_id, request_id) where request_id is not null
+     do update set request_id = excluded.request_id
      returning *`,
-    [id, input.title, input.campus, input.campusText, input.reward, input.location, input.desc, userId]
+    [id, input.title, input.campus, input.campusText, input.reward, input.location, input.desc, userId, requestId]
   );
   return taskFromRow(result.rows[0]);
 }

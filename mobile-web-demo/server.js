@@ -3,6 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const db = require('./database');
+const {
+  FORMAT_MESSAGE: STUDENT_ID_FORMAT_MESSAGE,
+  normalizeStudentId,
+  validStudentId
+} = require('./student-id');
 
 const root = __dirname;
 const port = Number(process.env.PORT || 5177);
@@ -126,13 +131,18 @@ async function requireUser(req) {
   return user;
 }
 
-function validStudentId(value) {
-  return /^\d{4,20}$/.test(String(value || '').trim());
-}
-
 function text(value, maxLength, fallback = '') {
   const result = String(value ?? '').trim().slice(0, maxLength);
   return result || fallback;
+}
+
+function idempotencyKey(req) {
+  const supplied = String(req.headers['idempotency-key'] || '').trim();
+  if (!supplied) return crypto.randomUUID();
+  if (!/^[A-Za-z0-9_-]{16,100}$/.test(supplied)) {
+    throw new db.AppError(400, '发布请求标识格式不正确，请刷新页面后重试');
+  }
+  return supplied;
 }
 
 function positiveNumber(value, label) {
@@ -212,9 +222,9 @@ async function handleApi(req, res, requestUrl) {
 
   if (pathname === '/api/auth/register' && req.method === 'POST') {
     const body = await readJsonBody(req);
-    const studentId = String(body.studentId || '').trim();
+    const studentId = normalizeStudentId(body.studentId);
     const password = String(body.password || '');
-    if (!validStudentId(studentId)) throw new db.AppError(400, '学号需要是4-20位数字');
+    if (!validStudentId(studentId)) throw new db.AppError(400, STUDENT_ID_FORMAT_MESSAGE);
     if (password.length < 6 || password.length > 72) throw new db.AppError(400, '密码长度需要为6-72位');
     const user = await db.createUser({
       studentId,
@@ -229,7 +239,7 @@ async function handleApi(req, res, requestUrl) {
 
   if (pathname === '/api/auth/login' && req.method === 'POST') {
     const body = await readJsonBody(req);
-    const studentId = String(body.studentId || '').trim();
+    const studentId = normalizeStudentId(body.studentId);
     const password = String(body.password || '');
     const stored = await db.findUserByStudentId(studentId);
     if (!stored || !passwordMatches(password, stored.password_hash)) {
@@ -264,7 +274,11 @@ async function handleApi(req, res, requestUrl) {
 
   if (pathname === '/api/products' && req.method === 'POST') {
     const user = await requireUser(req);
-    const product = await db.createProduct(user.id, productInput(await readJsonBody(req)));
+    const product = await db.createProduct(
+      user.id,
+      productInput(await readJsonBody(req)),
+      idempotencyKey(req)
+    );
     sendJson(res, 201, { ok: true, product });
     return true;
   }
@@ -295,7 +309,11 @@ async function handleApi(req, res, requestUrl) {
 
   if (pathname === '/api/tasks' && req.method === 'POST') {
     const user = await requireUser(req);
-    const task = await db.createTask(user.id, taskInput(await readJsonBody(req)));
+    const task = await db.createTask(
+      user.id,
+      taskInput(await readJsonBody(req)),
+      idempotencyKey(req)
+    );
     sendJson(res, 201, { ok: true, task });
     return true;
   }

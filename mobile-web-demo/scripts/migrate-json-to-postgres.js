@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { databaseConfigured, pool, transaction } = require('../database');
+const { normalizeStudentId, validStudentId } = require('../student-id');
 
 const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const authFile = path.join(dataDir, 'auth.json');
@@ -32,8 +33,8 @@ function makeBackup() {
 function collectUsers(auth, state) {
   const users = new Map();
   const ensure = (studentId, source = {}) => {
-    const id = String(studentId || '').trim();
-    if (!/^\d{4,20}$/.test(id)) return;
+    const id = normalizeStudentId(studentId);
+    if (!validStudentId(id)) return;
     const existing = users.get(id) || {};
     users.set(id, {
       studentId: id,

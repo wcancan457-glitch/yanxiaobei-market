@@ -525,6 +525,13 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   box-shadow: 0 0 0 3px rgba(30, 111, 255, 0.14);
 }
 .field textarea { min-height: 86px; resize: vertical; }
+.field-hint {
+  margin: 7px 2px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.field input[aria-invalid="true"] { border-color: var(--red-pin); }
 
 .photo-upload {
   height: 112px;
@@ -1206,7 +1213,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           <form class="form-panel" id="postForm">
             <label class="photo-upload" id="photoUpload">
               <span id="photoUploadText">添加商品图片</span>
-              <img id="photoPreview" alt="商品图片预览">
+              <img id="photoPreview" src="assets/yanxiaobei-blue-bg.png" alt="商品图片预览">
               <input id="photoInput" type="file" accept="image/*">
             </label>
             <div class="field">
@@ -1244,7 +1251,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
               <label for="desc">描述</label>
               <textarea id="desc" placeholder="写清楚成色、瑕疵、交易方式。不填写宿舍号。"></textarea>
             </div>
-            <button class="primary-btn" type="button">发布商品</button>
+            <button class="primary-btn" id="publishButton" type="submit">发布商品</button>
           </form>
         </div>
       </section>
@@ -1382,7 +1389,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       <div class="form-panel" style="padding: 0; border: 0; box-shadow: none;">
         <div class="field">
           <label for="studentId">学号</label>
-          <input id="studentId" value="" inputmode="numeric" autocomplete="username">
+          <input id="studentId" value="" inputmode="text" autocomplete="username"
+            autocapitalize="characters" maxlength="20" spellcheck="false"
+            placeholder="如 202364391 / S202312345 / B202312345"
+            aria-describedby="studentIdHint">
+          <p class="field-hint" id="studentIdHint">本科生输入纯数字学号；硕士生输入 S+9位数字；博士生输入 B+9位数字。</p>
         </div>
         <div class="field">
           <label for="studentPassword">密码</label>
@@ -1397,9 +1408,15 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     </section>
   </div>
 
-  <div class="toast" id="toast">已发送</div>
+  <div class="toast" id="toast" role="status" aria-live="polite">已发送</div>
 
+  <script src="student-id.js"></script>
   <script>
+    const {
+      FORMAT_MESSAGE: STUDENT_ID_FORMAT_MESSAGE,
+      normalizeStudentId,
+      validStudentId
+    } = window.YanxiaobeiStudentId;
     const STORAGE_KEY = 'yanxiaobei-campus-market-mvp-v1';
     const USE_API = location.protocol === 'http:' || location.protocol === 'https:';
     const phoneShell = document.querySelector('.phone-shell');
@@ -1412,6 +1429,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const messageList = document.getElementById('messageList');
     const profileList = document.getElementById('profileList');
     const postForm = document.getElementById('postForm');
+    const publishButton = document.getElementById('publishButton');
     const postProductTab = document.getElementById('postProductTab');
     const postTaskTab = document.getElementById('postTaskTab');
     const photoUpload = document.getElementById('photoUpload');
@@ -1436,6 +1454,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const loginTitle = document.getElementById('loginTitle');
     const loginDescription = document.getElementById('loginDescription');
     const switchLoginMode = document.getElementById('switchLoginMode');
+    const studentIdInput = document.getElementById('studentId');
     const studentPassword = document.getElementById('studentPassword');
     const profileName = document.getElementById('profileName');
     const profileMeta = document.getElementById('profileMeta');
@@ -1459,6 +1478,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     let postMode = 'product';
     let uploadedImageData = '';
     let loginMode = 'login';
+    let publishing = false;
+    let publishRequestKey = '';
 
     const seedState = {
       currentUserId: '',
@@ -2132,7 +2153,26 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       }
     }
 
+    function setPublishingState(active) {
+      publishing = active;
+      publishButton.disabled = active;
+      publishButton.setAttribute('aria-busy', String(active));
+      publishButton.textContent = active
+        ? '发布中…'
+        : postMode === 'task' ? '发布任务' : '发布商品';
+    }
+
+    function currentPublishRequestKey() {
+      if (!publishRequestKey) {
+        publishRequestKey = crypto.randomUUID
+          ? crypto.randomUUID()
+          : `publish_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      }
+      return publishRequestKey;
+    }
+
     async function publishProduct() {
+      if (publishing) return;
       const user = currentUser();
       if (!user) {
         openLogin();
@@ -2148,29 +2188,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         showToast('请补全标题、地点、价格和描述');
         return;
       }
-      if (postMode === 'task' || category.includes('互助')) {
-        try {
-          await apiRequest('/api/tasks', {
-            method: 'POST',
-            body: JSON.stringify({
-              title,
-              campus: campusText.includes('平乐园') ? 'pingleyuan' : 'zhonglan',
-              campusText,
-              reward: price,
-              location,
-              desc
-            })
-          });
-          postForm.reset();
-          resetPhotoUpload();
-          await hydrateFromServer();
-          switchTab('home');
-          showToast('互助任务已发布');
-        } catch (error) {
-          showToast(error.message);
-        }
-        return;
-      }
+      const isTask = postMode === 'task' || category.includes('互助');
       const visual = category.includes('教材')
         ? { imgClass: 'img-book', symbol: '书' }
         : category.includes('数码')
@@ -2182,28 +2200,35 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
               : category.includes('运动')
                 ? { imgClass: 'img-ball', symbol: '球' }
                 : { imgClass: 'img-guitar', symbol: '琴' };
+      const common = {
+        title,
+        campus: campusText.includes('平乐园') ? 'pingleyuan' : 'zhonglan',
+        campusText,
+        location,
+        desc
+      };
+      const endpoint = isTask ? '/api/tasks' : '/api/products';
+      const payload = isTask
+        ? { ...common, reward: price }
+        : { ...common, category, price, image: uploadedImageData, ...visual };
+
+      setPublishingState(true);
       try {
-        await apiRequest('/api/products', {
+        await apiRequest(endpoint, {
           method: 'POST',
-          body: JSON.stringify({
-            title,
-            category,
-            campus: campusText.includes('平乐园') ? 'pingleyuan' : 'zhonglan',
-            campusText,
-            price,
-            location,
-            desc,
-            image: uploadedImageData,
-            ...visual
-          })
+          headers: { 'Idempotency-Key': currentPublishRequestKey() },
+          body: JSON.stringify(payload)
         });
+        publishRequestKey = '';
         postForm.reset();
         resetPhotoUpload();
         await hydrateFromServer();
         switchTab('home');
-        showToast('发布成功');
+        showToast(isTask ? '互助任务已发布' : '商品发布成功');
       } catch (error) {
         showToast(error.message);
+      } finally {
+        setPublishingState(false);
       }
     }
 
@@ -2221,12 +2246,13 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         priceLabel.textContent = '价格';
         photoUploadText.textContent = uploadedImageData ? '已添加商品图片' : '添加商品图片';
       }
+      if (!publishing) publishButton.textContent = mode === 'task' ? '发布任务' : '发布商品';
     }
 
     function resetPhotoUpload() {
       uploadedImageData = '';
       photoInput.value = '';
-      photoPreview.removeAttribute('src');
+      photoPreview.src = 'assets/yanxiaobei-blue-bg.png';
       photoUpload.classList.remove('has-image');
       photoUploadText.textContent = postMode === 'task' ? '互助任务可不添加图片' : '添加商品图片';
     }
@@ -2440,7 +2466,13 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       };
       reader.readAsDataURL(file);
     });
-    postForm.querySelector('.primary-btn').addEventListener('click', publishProduct);
+    postForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      publishProduct();
+    });
+    postForm.addEventListener('input', () => {
+      if (!publishing) publishRequestKey = '';
+    });
     wantButton.addEventListener('click', requestWant);
     closeSheet.addEventListener('click', closeProductSheet);
     sheetMask.addEventListener('click', (event) => {
@@ -2455,11 +2487,22 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       setLoginMode(loginMode === 'login' ? 'register' : 'login');
     });
 
+    studentIdInput.addEventListener('input', () => {
+      studentIdInput.value = studentIdInput.value.toUpperCase();
+      studentIdInput.setAttribute('aria-invalid', 'false');
+    });
+
     confirmLogin.addEventListener('click', async () => {
-      const id = document.getElementById('studentId').value.trim();
+      const id = normalizeStudentId(studentIdInput.value);
+      studentIdInput.value = id;
       const password = studentPassword.value;
       if (!id) {
         showToast('请输入学号');
+        return;
+      }
+      if (!validStudentId(id)) {
+        studentIdInput.setAttribute('aria-invalid', 'true');
+        showToast(STUDENT_ID_FORMAT_MESSAGE);
         return;
       }
       if (!password) {
@@ -2589,6 +2632,4 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   </script>
 </body>
 </html>
-
-
 
