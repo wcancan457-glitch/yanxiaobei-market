@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
       BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
     steps:
       - name: Check required secrets

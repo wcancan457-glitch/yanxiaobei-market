@@ -6,15 +6,18 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check database.js && node --check student-id.js && node --check scripts/run-migrations.js && node --check scripts/migrate-json-to-postgres.js && node --check scripts/verify-database.js && node scripts/test-student-id.js",
+    "check": "node --check server.js && node --check database.js && node --check mailer.js && node --check content-security.js && node --check student-id.js && node --check scripts/run-migrations.js && node --check scripts/configure-app-role.js && node --check scripts/migrate-json-to-postgres.js && node --check scripts/verify-database.js && node scripts/test-student-id.js && node scripts/test-input-security.js",
     "db:migrate": "node scripts/run-migrations.js",
+    "db:configure-role": "node scripts/configure-app-role.js",
     "db:import-json": "node scripts/migrate-json-to-postgres.js",
-    "db:verify": "node scripts/verify-database.js"
+    "db:verify": "node scripts/verify-database.js",
+    "test:platform": "node scripts/test-platform-flows.js"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
+    "nodemailer": "^9.0.5",
     "pg": "^8.23.0"
   }
 }

@@ -208,6 +208,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 
 .chip {
   flex: 0 0 auto;
+  min-height: 44px;
   padding: 9px 16px;
   border-radius: 999px;
   background: var(--card);
@@ -251,6 +252,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   font-size: 13px;
   font-weight: 700;
   padding: 4px 0;
+  min-width: 44px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -270,6 +273,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 
 .quick-item {
   flex: 0 0 auto;
+  min-height: 44px;
   padding: 8px 13px;
   border-radius: 999px;
   background: var(--card);
@@ -466,7 +470,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   margin-top: 10px;
 }
 .task-actions .mini-btn {
-  min-height: 32px;
+  min-height: 44px;
   padding: 0 13px;
   font-size: 12px;
 }
@@ -608,6 +612,24 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 }
 .notice-card h3, .profile-card h3 { margin: 0 0 8px; font-size: 16px; font-weight: 800; }
 .notice-card p, .profile-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.notification-section { display: grid; gap: 9px; }
+.notification-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.notification-head h3 { margin: 0; font-size: 17px; }
+.notification-list { display: grid; gap: 8px; }
+.notification-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 10px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: #F3EEE2;
+}
+.notification-item.unread { background: #E7F3F8; }
+.notification-copy { min-width: 0; display: grid; gap: 4px; }
+.notification-copy strong { font-size: 14px; overflow-wrap: anywhere; }
+.notification-copy span { color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.notification-time { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.notification-item .mini-btn { grid-column: 1 / -1; justify-self: start; min-height: 44px; }
 
 .my-product-list {
   display: grid;
@@ -639,11 +661,35 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 .my-product-info .status-badge { width: fit-content; }
 .my-product-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 7px;
   flex: 0 0 auto;
 }
+.task-application-list { display: grid; gap: 7px; margin-top: 7px; }
+.task-application-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 9px;
+  border-radius: 10px;
+  background: #F3EEE2;
+}
+.task-application-row span { min-width: 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.task-application-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.task-application-actions .mini-btn { min-height: 44px; padding: 0 10px; }
+.verification-card { background: #EEF7FA; }
+.verification-card.is-verified { background: #E9F4EA; }
+.verification-form { display: grid; gap: 9px; margin-top: 12px; }
+.verification-form input {
+  width: 100%; min-width: 0; height: 44px; border: 1px solid var(--line);
+  border-radius: 12px; padding: 0 12px; background: #fff;
+}
+.verification-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.verification-actions .mini-btn { min-height: 44px; }
 .my-product-actions .mini-btn {
-  min-height: 30px;
+  min-height: 44px;
   padding: 0 11px;
   font-size: 12px;
 }
@@ -726,7 +772,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 
 .action-row { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 12px; }
 .mini-btn {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 999px;
   background: #F0EBDF;
@@ -830,6 +876,20 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 .admin-user-meta strong { color: var(--ink); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
 .admin-user-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
 .admin-user-actions .mini-btn, .admin-entry .mini-btn { min-height: 44px; padding: 0 16px; }
+.admin-report-list { display: grid; gap: 10px; }
+.admin-report-card {
+  padding: 15px;
+  border-radius: 15px;
+  background: var(--card);
+  box-shadow: var(--shadow-1);
+  display: grid;
+  gap: 9px;
+}
+.admin-report-card h3 { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
+.admin-report-meta { display: flex; flex-wrap: wrap; gap: 6px; color: var(--muted); font-size: 12px; }
+.admin-report-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.admin-report-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.admin-report-actions .mini-btn { min-height: 44px; }
 .admin-entry {
   background: var(--blue-deep);
   color: #fff;
@@ -864,7 +924,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 
 .list-header {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
   gap: 8px;
   padding: calc(12px + env(safe-area-inset-top)) 16px 10px;
@@ -872,8 +932,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   border-bottom: 1px solid var(--line);
 }
 .list-back {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--card);
   border: 1px solid var(--line);
@@ -890,15 +950,15 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   min-height: 72px;
   padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
   gap: 8px;
   background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 .chat-back, .chat-more {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--card);
   border: 1px solid var(--line);
@@ -1131,6 +1191,21 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 .detail-item span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
 .detail-item strong { font-size: 14px; font-weight: 700; }
 .sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.sheet-safety-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.sheet-safety-actions .mini-btn { min-height: 44px; }
+.task-safety-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.task-safety-actions .mini-btn { min-height: 44px; padding: 0 10px; }
+.auth-secondary-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.auth-secondary-actions button { color: var(--blue-btn); min-height: 44px; font-size: 13px; font-weight: 700; }
+.report-target {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #F3EEE2;
+  color: var(--ink-2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
 
 /* ===== Toast ===== */
 .toast {
@@ -1402,7 +1477,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         <header class="topbar">
           <div class="brand">
             <strong>消息</strong>
-            <span>交易买家与卖家的聊天列表</span>
+            <span>交易会话、任务申请与平台处理通知</span>
           </div>
         </header>
         <div class="message-list" id="messageList">
@@ -1505,11 +1580,29 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
                 <option value="all">全部状态</option>
                 <option value="online">近 15 分钟活跃</option>
                 <option value="active">正常账号</option>
+                <option value="unverified">待身份认证</option>
                 <option value="disabled">已停用</option>
               </select>
             </div>
             <div class="admin-user-list" id="adminUserList" aria-live="polite">
               <div class="empty-state">进入后台后加载用户信息。</div>
+            </div>
+          </section>
+          <section class="admin-user-section" aria-labelledby="adminReportsTitle">
+            <div class="admin-section-title">
+              <h2 id="adminReportsTitle">举报处理</h2>
+              <span id="adminReportCount">—</span>
+            </div>
+            <div class="admin-toolbar" style="grid-template-columns: 1fr;">
+              <select id="adminReportStatus" aria-label="筛选举报状态">
+                <option value="pending">待处理</option>
+                <option value="resolved">已处理</option>
+                <option value="dismissed">已驳回</option>
+                <option value="all">全部举报</option>
+              </select>
+            </div>
+            <div class="admin-report-list" id="adminReportList" aria-live="polite">
+              <div class="empty-state">进入后台后加载举报工单。</div>
             </div>
           </section>
         </div>
@@ -1569,6 +1662,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         </div>
       </div>
       <p class="product-desc" id="sheetHint" style="display:block;">平台不收集宿舍号。建议选择食堂门口、教学楼大厅、校门口等公共地点交易。</p>
+      <div class="sheet-safety-actions" id="sheetSafetyActions">
+        <button class="mini-btn" id="reportProductButton" type="button">举报商品</button>
+        <button class="mini-btn danger" id="blockSellerButton" type="button">屏蔽卖家</button>
+      </div>
       <div class="sheet-actions">
         <button class="secondary-btn" id="closeSheet">关闭</button>
         <button class="primary-btn" id="wantButton" type="button" data-toast="已发送我想要，等待卖家处理">我想要</button>
@@ -1590,15 +1687,57 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           <p class="field-hint" id="studentIdHint">本科生输入纯数字学号；硕士生输入 S+9位数字；博士生输入 B+9位数字。</p>
         </div>
         <div class="field">
-          <label for="studentPassword">密码</label>
+          <label for="studentPassword" id="studentPasswordLabel">密码</label>
           <input id="studentPassword" type="password" value="" autocomplete="current-password">
+        </div>
+        <div class="field" id="schoolEmailField" hidden>
+          <label for="schoolEmail">北工大校内邮箱</label>
+          <input id="schoolEmail" type="email" value="" autocomplete="email" placeholder="name@bjut.edu.cn">
+          <p class="field-hint">用于校园身份认证与密码找回；没有校内邮箱时可注册后联系管理员人工核验。</p>
+        </div>
+        <div class="field" id="authCodeField" hidden>
+          <label for="authCode">邮箱验证码</label>
+          <input id="authCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6位数字验证码">
         </div>
       </div>
       <div class="login-actions">
         <button class="secondary-btn" id="cancelLogin" type="button">取消</button>
         <button class="primary-btn" id="confirmLogin" type="button">登录</button>
       </div>
-      <button class="login-switch" id="switchLoginMode" type="button">没有账号？先注册</button>
+      <div class="auth-secondary-actions">
+        <button id="switchLoginMode" type="button">没有账号？先注册</button>
+        <button id="forgotPasswordButton" type="button">忘记密码</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="sheet-mask login-mask" id="reportMask" aria-hidden="true">
+    <section class="login-dialog" role="dialog" aria-modal="true" aria-label="提交举报">
+      <h2>提交举报</h2>
+      <p>举报会进入管理员后台处理，被举报者不会看到你的身份。</p>
+      <div class="report-target" id="reportTargetText">举报对象</div>
+      <div class="form-panel" style="padding: 0; border: 0; box-shadow: none;">
+        <div class="field">
+          <label for="reportReason">举报原因</label>
+          <select id="reportReason">
+            <option value="">请选择原因</option>
+            <option value="spam">重复或垃圾信息</option>
+            <option value="fraud">疑似诈骗</option>
+            <option value="prohibited">违规或危险内容</option>
+            <option value="harassment">骚扰或不当行为</option>
+            <option value="privacy">泄露隐私</option>
+            <option value="other">其他问题</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="reportDescription">问题说明</label>
+          <textarea id="reportDescription" maxlength="1000" placeholder="请说明具体问题，便于管理员核查。"></textarea>
+        </div>
+      </div>
+      <div class="login-actions">
+        <button class="secondary-btn" id="cancelReport" type="button">取消</button>
+        <button class="primary-btn" id="submitReport" type="button">提交举报</button>
+      </div>
     </section>
   </div>
 
@@ -1631,6 +1770,9 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const adminStatusFilter = document.getElementById('adminStatusFilter');
     const adminUserCount = document.getElementById('adminUserCount');
     const adminUserList = document.getElementById('adminUserList');
+    const adminReportStatus = document.getElementById('adminReportStatus');
+    const adminReportCount = document.getElementById('adminReportCount');
+    const adminReportList = document.getElementById('adminReportList');
     const postForm = document.getElementById('postForm');
     const publishButton = document.getElementById('publishButton');
     const postProductTab = document.getElementById('postProductTab');
@@ -1654,6 +1796,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const sheetCondition = document.getElementById('sheetCondition');
     const sheetHint = document.getElementById('sheetHint');
     const wantButton = document.getElementById('wantButton');
+    const reportProductButton = document.getElementById('reportProductButton');
+    const blockSellerButton = document.getElementById('blockSellerButton');
     const avatarLogin = document.getElementById('avatarLogin');
     const loginMask = document.getElementById('loginMask');
     const cancelLogin = document.getElementById('cancelLogin');
@@ -1661,8 +1805,20 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const loginTitle = document.getElementById('loginTitle');
     const loginDescription = document.getElementById('loginDescription');
     const switchLoginMode = document.getElementById('switchLoginMode');
+    const forgotPasswordButton = document.getElementById('forgotPasswordButton');
     const studentIdInput = document.getElementById('studentId');
     const studentPassword = document.getElementById('studentPassword');
+    const studentPasswordLabel = document.getElementById('studentPasswordLabel');
+    const schoolEmailField = document.getElementById('schoolEmailField');
+    const schoolEmailInput = document.getElementById('schoolEmail');
+    const authCodeField = document.getElementById('authCodeField');
+    const authCodeInput = document.getElementById('authCode');
+    const reportMask = document.getElementById('reportMask');
+    const reportTargetText = document.getElementById('reportTargetText');
+    const reportReason = document.getElementById('reportReason');
+    const reportDescription = document.getElementById('reportDescription');
+    const cancelReport = document.getElementById('cancelReport');
+    const submitReport = document.getElementById('submitReport');
     const profileName = document.getElementById('profileName');
     const profileMeta = document.getElementById('profileMeta');
     const profileLoginPill = document.getElementById('profileLoginPill');
@@ -1678,6 +1834,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const sendChat = document.getElementById('sendChat');
     let activeProductId = null;
     let activeChat = null;
+    let activeReportTarget = null;
     let currentFilter = 'all';
     let currentCategory = 'all';
     let currentModule = 'products';
@@ -1687,7 +1844,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     let loginMode = 'login';
     let publishing = false;
     let publishRequestKey = '';
-    let adminDashboard = { overview: null, users: [] };
+    let adminDashboard = { overview: null, users: [], reports: [] };
     let adminLoading = false;
     let adminRequestSequence = 0;
     let adminSearchTimer = null;
@@ -1852,8 +2009,12 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           createdAt: Date.now() - 180000
         }
       ],
+      taskApplications: [],
+      notifications: [],
+      blocks: [],
       intents: [],
-      chats: []
+      chats: [],
+      authCapabilities: { schoolEmailDomain: 'bjut.edu.cn', emailDeliveryConfigured: false }
     };
 
     let state = loadState();
@@ -1921,6 +2082,25 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         '"': '&quot;',
         "'": '&#039;'
       }[char]));
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value);
+    }
+
+    const safeProductImageClasses = new Set([
+      'img-book', 'img-phone', 'img-lamp', 'img-clothes', 'img-ball', 'img-guitar'
+    ]);
+
+    function safeProductImageClass(value) {
+      return safeProductImageClasses.has(value) ? value : 'img-guitar';
+    }
+
+    function safeProductImageSource(value) {
+      const image = String(value || '').trim();
+      if (/^assets\/products\/[a-z0-9._-]+\.(?:png|jpe?g|webp)$/i.test(image)) return image;
+      if (/^data:image\/(?:png|jpe?g|webp);base64,[a-z0-9+/]+={0,2}$/i.test(image)) return image;
+      return '';
     }
 
     function statusText(status) {
@@ -2023,14 +2203,43 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 
     function setLoginMode(mode) {
       loginMode = mode;
-      const registering = mode === 'register';
-      loginTitle.textContent = registering ? '注册学号账号' : '学号账号登录';
-      loginDescription.textContent = registering
-        ? '注册后即可登录。当前版本使用平台账号认证，不会连接学校教务系统。'
-        : '登录后可以发布商品、联系卖家、查看我想要和交易状态。';
-      confirmLogin.textContent = registering ? '注册并登录' : '登录';
-      switchLoginMode.textContent = registering ? '已有账号？返回登录' : '没有账号？先注册';
-      studentPassword.autocomplete = registering ? 'new-password' : 'current-password';
+      const passwordField = studentPassword.closest('.field');
+      const copy = {
+        login: {
+          title: '学号账号登录',
+          description: '登录后可以查看交易、任务申请和站内通知。',
+          confirm: '登录',
+          switch: '没有账号？先注册'
+        },
+        register: {
+          title: '注册学号账号',
+          description: '注册后需要通过 @bjut.edu.cn 校内邮箱验证码或管理员人工核验，才能发布和接单。',
+          confirm: '注册并登录',
+          switch: '已有账号？返回登录'
+        },
+        forgot: {
+          title: '找回密码',
+          description: '输入学号和已认证校内邮箱。匹配成功后，验证码会发送到该邮箱。',
+          confirm: '发送验证码',
+          switch: '返回登录'
+        },
+        reset: {
+          title: '设置新密码',
+          description: '输入邮件中的6位验证码和8-72位新密码。重置后所有旧登录会立即失效。',
+          confirm: '重置密码',
+          switch: '返回登录'
+        }
+      }[mode];
+      loginTitle.textContent = copy.title;
+      loginDescription.textContent = copy.description;
+      confirmLogin.textContent = copy.confirm;
+      switchLoginMode.textContent = copy.switch;
+      schoolEmailField.hidden = !['register', 'forgot', 'reset'].includes(mode);
+      authCodeField.hidden = mode !== 'reset';
+      passwordField.hidden = mode === 'forgot';
+      studentPasswordLabel.textContent = mode === 'reset' ? '新密码' : '密码';
+      studentPassword.autocomplete = ['register', 'reset'].includes(mode) ? 'new-password' : 'current-password';
+      forgotPasswordButton.hidden = mode !== 'login';
     }
 
     function openLogin() {
@@ -2049,15 +2258,49 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       sheetMask.setAttribute('aria-hidden', 'true');
     }
 
+    function ensureVerified() {
+      const user = currentUser();
+      if (!user) {
+        openLogin();
+        return false;
+      }
+      if (!user.isVerified) {
+        switchTab('profile');
+        showToast('请先完成校园身份认证');
+        return false;
+      }
+      return true;
+    }
+
+    function openReport(targetType, targetId, title) {
+      if (!currentUser()) {
+        openLogin();
+        return;
+      }
+      activeReportTarget = { targetType, targetId, title };
+      reportTargetText.textContent = title;
+      reportReason.value = '';
+      reportDescription.value = '';
+      reportMask.classList.add('open');
+      reportMask.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeReportDialog() {
+      activeReportTarget = null;
+      reportMask.classList.remove('open');
+      reportMask.setAttribute('aria-hidden', 'true');
+    }
+
     function productCardHtml(product) {
       const locked = product.status === 'trading';
       const mine = currentUser()?.id === product.sellerId;
       const label = mine ? '我的' : locked ? '暂不可咨询' : '我想要';
       const buttonClass = locked ? 'want locked' : 'want';
       const sellerInitial = (product.sellerName || '同学').slice(0, 1);
-      const imageHtml = product.image
-        ? `<div class="product-img uploaded"><img src="${product.image}" alt="${escapeHtml(product.title)}"></div>`
-        : `<div class="product-img ${product.imgClass}">${escapeHtml(product.symbol)}</div>`;
+      const safeImage = safeProductImageSource(product.image);
+      const imageHtml = safeImage
+        ? `<div class="product-img uploaded"><img src="${escapeAttribute(safeImage)}" alt="${escapeAttribute(product.title)}"></div>`
+        : `<div class="product-img ${safeProductImageClass(product.imgClass)}">${escapeHtml(product.symbol)}</div>`;
       return `
         <button class="product-card" data-product-id="${product.id}">
           ${imageHtml}
@@ -2112,11 +2355,19 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       taskList.innerHTML = visibleTasks.length ? visibleTasks.map((task) => {
         const isPublisher = user?.id === task.publisherId;
         const isTaker = user?.id === task.takerId;
+        const applications = (state.taskApplications || []).filter((item) => item.taskId === task.id);
+        const pendingApplications = applications.filter((item) => item.status === 'pending');
+        const myPendingApplication = applications.find((item) =>
+          item.applicantId === user?.id && item.status === 'pending'
+        );
         let actionHtml = '';
         if (task.status === 'open') {
           actionHtml = isPublisher
-            ? '<span class="tag">我发布的</span>'
-            : '<button class="mini-btn primary" data-task-action="take" data-id="' + task.id + '">接单</button>';
+            ? `<span class="tag">我发布的${pendingApplications.length ? ` · ${pendingApplications.length}人申请` : ''}</span>`
+            : myPendingApplication
+              ? `<span class="tag yellow">已申请，等待发布者确认</span>
+                 <button class="mini-btn danger" data-task-application-action="withdraw" data-application-id="${myPendingApplication.id}">撤回申请</button>`
+              : `<button class="mini-btn primary" data-task-action="take" data-id="${task.id}">申请接单</button>`;
         } else if (task.status === 'in_progress') {
           if (isPublisher) {
             actionHtml = `
@@ -2148,6 +2399,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
               <span class="tag">${escapeHtml(task.location)}</span>
             </div>
             ${actionHtml ? '<div class="task-actions">' + actionHtml + '</div>' : ''}
+            ${!isPublisher ? `
+              <div class="task-safety-actions">
+                <button class="mini-btn" data-report-type="task" data-report-id="${task.id}" data-report-title="${escapeHtml(task.title)}">举报任务</button>
+                <button class="mini-btn danger" data-block-user-id="${task.publisherId}">屏蔽发布者</button>
+              </div>` : ''}
           </article>
         `;
       }).join('') : '<div class="empty-state">当前校区暂时没有互助任务。</div>';
@@ -2160,10 +2416,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     }
 
     function productThumb(product, className) {
-      if (product.image) {
-        return `<div class="${className}"><img src="${product.image}" alt="${escapeHtml(product.title)}"></div>`;
+      const safeImage = safeProductImageSource(product.image);
+      if (safeImage) {
+        return `<div class="${className}"><img src="${escapeAttribute(safeImage)}" alt="${escapeAttribute(product.title)}"></div>`;
       }
-      return `<div class="${className} ${product.imgClass}">${escapeHtml(product.symbol)}</div>`;
+      return `<div class="${className} ${safeProductImageClass(product.imgClass)}">${escapeHtml(product.symbol)}</div>`;
     }
 
     function conversationStatus(intent, product, userId) {
@@ -2251,6 +2508,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           return product && product.sellerId === user.id && intent.status === 'pending';
         }).length;
         count += state.tasks.filter((task) => task.status === 'in_progress' && task.publisherId === user.id).length;
+        count += (state.taskApplications || []).filter((application) => {
+          const task = state.tasks.find((item) => item.id === application.taskId);
+          return task?.publisherId === user.id && application.status === 'pending';
+        }).length;
+        count += (state.notifications || []).filter((notification) => !notification.isRead).length;
       }
       const badge = document.getElementById('msgBadge');
       if (!badge) return;
@@ -2266,7 +2528,20 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       }
 
       const conversations = buildConversations(user);
-      messageList.innerHTML = conversations.length ? conversations.map((item) => `
+      const notifications = state.notifications || [];
+      const notificationHtml = notifications.length
+        ? notifications.slice(0, 20).map((notification) => `
+            <div class="notification-item ${notification.isRead ? '' : 'unread'}">
+              <div class="notification-copy">
+                <strong>${escapeHtml(notification.title)}</strong>
+                <span>${escapeHtml(notification.body)}</span>
+              </div>
+              <span class="notification-time">${escapeHtml(formatAdminDate(notification.createdAt, ''))}</span>
+              ${notification.isRead ? '' : `<button class="mini-btn" data-action="read-notification" data-notification-id="${notification.id}">标为已读</button>`}
+            </div>
+          `).join('')
+        : '<p class="empty-state">暂无站内通知。</p>';
+      const conversationHtml = conversations.length ? conversations.map((item) => `
         <button class="conversation-card" data-action="open-chat" data-product-id="${item.product.id}" data-peer-id="${item.peer.id}">
           <span class="conversation-avatar"><img src="assets/yanxiaobei-blue-bg.png" alt=""></span>
           <span class="conversation-main">
@@ -2279,7 +2554,18 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           </span>
           ${productThumb(item.product, 'conversation-thumb')}
         </button>
-      `).join('') : '<div class="empty-state">暂时没有会话。你可以去首页点“我想要”，或发布商品等待买家联系。</div>';
+      `).join('') : '<div class="empty-state">暂时没有交易会话。你可以去首页点“我想要”，或发布商品等待买家联系。</div>';
+      messageList.innerHTML = `
+        <section class="notice-card notification-section">
+          <div class="notification-head">
+            <h3>站内通知</h3>
+            ${notifications.some((item) => !item.isRead) ? '<button class="mini-btn" data-action="read-all-notifications">全部已读</button>' : ''}
+          </div>
+          <div class="notification-list">${notificationHtml}</div>
+        </section>
+        <div class="notification-head"><h3>交易会话</h3></div>
+        ${conversationHtml}
+      `;
     }
 
     function renderProfile() {
@@ -2299,16 +2585,26 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       }
 
       const myProducts = state.products.filter((product) => product.sellerId === user.id);
-      const myTasks = state.tasks.filter((task) => task.publisherId === user.id || task.takerId === user.id);
+      const myTaskApplicationIds = new Set((state.taskApplications || [])
+        .filter((application) => application.applicantId === user.id)
+        .map((application) => application.taskId));
+      const myTasks = state.tasks.filter((task) =>
+        task.publisherId === user.id || task.takerId === user.id || myTaskApplicationIds.has(task.id)
+      );
       const sold = myProducts.filter((product) => product.status === 'sold').length;
-      const pending = state.intents.filter((intent) => {
+      const pendingPurchases = state.intents.filter((intent) => {
         const product = state.products.find((item) => item.id === intent.productId);
         return product?.sellerId === user.id && intent.status === 'pending';
       }).length;
+      const pendingTaskApplications = (state.taskApplications || []).filter((application) => {
+        const task = state.tasks.find((item) => item.id === application.taskId);
+        return task?.publisherId === user.id && application.status === 'pending';
+      }).length;
+      const pending = pendingPurchases + pendingTaskApplications;
 
       profileName.textContent = user.name;
       profileMeta.textContent = `${user.studentId || user.id} · ${user.campus}`;
-      profileLoginPill.innerHTML = '<i class="login-dot"></i> 学号密码已登录';
+      profileLoginPill.innerHTML = `<i class="login-dot"></i> ${user.isVerified ? '校园身份已认证' : '待校园身份认证'}`;
       statPost.textContent = String(myProducts.length);
       statSold.textContent = String(sold);
       statPending.textContent = String(pending);
@@ -2330,14 +2626,31 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       `).join('') : '<p class="empty-state" style="margin-top:8px;">还没有发布过商品，去首页点发布吧。</p>';
       const taskRows = myTasks.length ? myTasks.map((item) => {
         const displayStatus = effectiveTaskStatus(item);
-        const tone = displayStatus === 'open' ? 'done' : displayStatus === 'in_progress' ? 'warn' : 'closed';
         const isPublisher = item.publisherId === user.id;
         const isTaker = item.takerId === user.id;
+        const applications = (state.taskApplications || []).filter((application) => application.taskId === item.id);
+        const pendingApplications = applications.filter((application) => application.status === 'pending');
+        const myApplication = applications.find((application) => application.applicantId === user.id);
+        const applicationPending = !isPublisher && !isTaker && myApplication?.status === 'pending';
+        const tone = applicationPending ? 'warn' : displayStatus === 'open' ? 'done' : displayStatus === 'in_progress' ? 'warn' : 'closed';
+        const role = isPublisher ? '我发布' : isTaker ? '我接取' : '我申请';
+        const stateLabel = applicationPending ? '等待发布者确认' : taskStatusText(displayStatus);
+        const applicationRows = isPublisher && pendingApplications.length
+          ? `<div class="task-application-list">${pendingApplications.map((application) => `
+              <div class="task-application-row">
+                <span>${escapeHtml(application.applicantName || '校园同学')} 申请接单</span>
+                <div class="task-application-actions">
+                  <button class="mini-btn danger" data-task-application-action="reject" data-application-id="${application.id}">拒绝</button>
+                  <button class="mini-btn primary" data-task-application-action="accept" data-application-id="${application.id}">确认</button>
+                </div>
+              </div>`).join('')}</div>`
+          : '';
         return `
           <div class="my-product-row">
             <div class="my-product-info">
               <strong>${escapeHtml(item.title)}</strong>
-              <span class="status-badge ${tone}">${isPublisher ? '我发布' : '我接取'} · ${escapeHtml(taskStatusText(displayStatus))} · ${escapeHtml(formatTaskDeadline(item.deadlineAt))}</span>
+              <span class="status-badge ${tone}">${role} · ${escapeHtml(stateLabel)} · ${escapeHtml(formatTaskDeadline(item.deadlineAt))}</span>
+              ${applicationRows}
             </div>
             <div class="my-product-actions">
               ${isPublisher && (displayStatus === 'open' || displayStatus === 'in_progress')
@@ -2349,14 +2662,49 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
               ${isTaker && !isPublisher && displayStatus === 'in_progress'
                 ? `<button class="mini-btn danger" data-action="task-withdraw" data-id="${item.id}">放弃接单</button>`
                 : ''}
+              ${applicationPending
+                ? `<button class="mini-btn danger" data-task-application-action="withdraw" data-application-id="${myApplication.id}">撤回申请</button>`
+                : ''}
             </div>
           </div>`;
       }).join('') : '<p class="empty-state" style="margin-top:8px;">还没有发布过互助任务。</p>';
+      const emailReady = Boolean(state.authCapabilities?.emailDeliveryConfigured);
+      const verificationHtml = user.isVerified ? `
+        <article class="profile-card verification-card is-verified">
+          <h3>校园身份已认证</h3>
+          <p>${user.schoolEmail ? `已绑定 ${escapeHtml(user.schoolEmail)}` : '该账号已通过历史账号迁移或管理员人工核验。'} 发布、接单与聊天权限已开放。</p>
+        </article>
+      ` : `
+        <article class="profile-card verification-card">
+          <h3>完成校园身份认证</h3>
+          <p>${emailReady ? '使用 @bjut.edu.cn 校内邮箱接收验证码；也可以联系管理员人工核验。' : '邮件发送服务正在配置。你可以先填写校内邮箱并联系管理员人工核验。'}</p>
+          <div class="verification-form">
+            <div class="verification-actions">
+              <input id="profileSchoolEmail" type="email" value="${escapeHtml(user.schoolEmail || '')}" placeholder="name@bjut.edu.cn" aria-label="北工大校内邮箱">
+              <button class="mini-btn primary" data-action="${emailReady ? 'send-verification-code' : 'save-school-email'}">${emailReady ? '发送验证码' : '保存邮箱'}</button>
+            </div>
+            ${emailReady ? `
+              <div class="verification-actions">
+                <input id="profileVerificationCode" inputmode="numeric" maxlength="6" placeholder="6位验证码" aria-label="身份验证码">
+                <button class="mini-btn" data-action="verify-email-code">确认认证</button>
+              </div>
+            ` : ''}
+          </div>
+        </article>
+      `;
+      const blockedRows = (state.blocks || []).length
+        ? state.blocks.map((block) => `
+            <div class="my-product-row">
+              <div class="my-product-info"><strong>${escapeHtml(block.name)}</strong><span class="status-badge closed">已屏蔽</span></div>
+              <button class="mini-btn" data-action="unblock-user" data-user-id="${block.userId}">取消屏蔽</button>
+            </div>`).join('')
+        : '<p class="empty-state" style="margin-top:8px;">暂无已屏蔽用户。</p>';
       profileList.innerHTML = `
+        ${verificationHtml}
         ${user.isAdmin ? `
           <article class="profile-card admin-entry">
             <h3>管理后台</h3>
-            <p>查看注册与登录情况，管理用户账号。用户隐私信息仅管理员可见。</p>
+            <p>查看注册、身份认证和登录情况，处理举报并管理违规账号。用户隐私信息仅管理员可见。</p>
             <button class="mini-btn" data-action="open-admin">进入管理后台</button>
           </article>
         ` : ''}
@@ -2367,11 +2715,12 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         </article>
         <article class="profile-card">
           <h3>我的互助任务</h3>
-          <p>共 ${myTasks.length} 个我发布或接取的任务；过期记录会保留，但不会继续在首页接单。</p>
+          <p>共 ${myTasks.length} 个我发布、接取或申请的任务；发布者需要确认申请后任务才会开始。</p>
           <div class="my-product-list">${taskRows}</div>
         </article>
         <article class="profile-card"><h3>我想要</h3><p>我发起了 ${state.intents.filter((item) => item.buyerId === user.id).length} 个我想要，可以在消息页继续聊天。</p></article>
-        <article class="profile-card"><h3>账号与安全</h3><p>学号仅用于身份识别，不向普通用户展示。</p></article>
+        <article class="profile-card"><h3>已屏蔽用户</h3><p>双方内容和消息会互相隐藏，取消屏蔽后恢复。</p><div class="my-product-list">${blockedRows}</div></article>
+        <article class="profile-card"><h3>账号与安全</h3><p>学号和校内邮箱不向普通用户展示；密码只保存加盐哈希。</p></article>
         <article class="profile-card"><h3>退出登录</h3><p><button class="mini-btn danger" data-action="logout">退出当前学号</button></p></article>
       `;
     }
@@ -2398,13 +2747,14 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         <div class="admin-metric"><strong>${overview.newUsers7d}</strong><span>近 7 天新增</span></div>
       `;
       adminMetrics.setAttribute('aria-busy', 'false');
-      adminSummaryFoot.textContent = `有效账号 ${overview.enabledUsers} 个 · 有效会话 ${overview.validSessions} 个 · 近 15 分钟活跃会话 ${overview.activeSessions} 个 · 商品 ${overview.totalProducts} 件 · 任务 ${overview.totalTasks} 个`;
+      adminSummaryFoot.textContent = `有效账号 ${overview.enabledUsers} 个 · 待认证 ${overview.unverifiedUsers} 个 · 待处理举报 ${overview.pendingReports} 条 · 有效会话 ${overview.validSessions} 个 · 商品 ${overview.totalProducts} 件 · 任务 ${overview.totalTasks} 个`;
       adminUpdatedAt.textContent = `更新于 ${new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date())}`;
     }
 
     function adminStatusHtml(user) {
       if (user.isAdmin) return '<span class="status-badge">管理员</span>';
       if (user.isDisabled) return '<span class="status-badge closed">已停用</span>';
+      if (!user.isVerified) return '<span class="status-badge warn">待身份认证</span>';
       if (user.activeSessions > 0) return '<span class="status-badge done">近 15 分钟活跃</span>';
       return '<span class="status-badge">正常</span>';
     }
@@ -2430,6 +2780,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             <span>注册时间<strong>${escapeHtml(formatAdminDate(user.registeredAt, '未知'))}</strong></span>
             <span>最后登录<strong>${escapeHtml(formatAdminDate(user.lastLoginAt))}</strong></span>
             <span>登录与会话<strong>${user.loginCount} 次 · ${user.validSessions} 个有效会话</strong></span>
+            <span>校内邮箱<strong>${escapeHtml(user.schoolEmail || '未绑定')}</strong></span>
+            <span>身份认证<strong>${user.isVerified ? `已认证 · ${escapeHtml(user.verificationMethod || '未知方式')}` : '待核验'}</strong></span>
             <span>发布商品<strong>${user.productCount} 件</strong></span>
             <span>发布任务<strong>${user.taskCount} 个</strong></span>
           </div>
@@ -2437,6 +2789,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             ${user.isAdmin
               ? '<span class="status-badge">唯一管理员，账号受保护</span>'
               : `
+                ${!user.isVerified ? `<button class="mini-btn primary" data-admin-action="verify_identity" data-user-id="${escapeHtml(user.id)}">人工认证通过</button>` : ''}
                 <button class="mini-btn ${user.isDisabled ? 'primary' : 'danger'}" data-admin-action="${user.isDisabled ? 'enable' : 'disable'}" data-user-id="${escapeHtml(user.id)}">${user.isDisabled ? '恢复账号' : '停用账号'}</button>
                 ${user.validSessions > 0 && !user.isDisabled
                   ? `<button class="mini-btn" data-admin-action="force_logout" data-user-id="${escapeHtml(user.id)}">强制退出</button>`
@@ -2447,6 +2800,44 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       `).join('');
     }
 
+    function reportReasonText(reason) {
+      return {
+        spam: '重复或垃圾信息',
+        fraud: '疑似诈骗',
+        prohibited: '违规或危险内容',
+        harassment: '骚扰或不当行为',
+        privacy: '泄露隐私',
+        other: '其他问题'
+      }[reason] || reason;
+    }
+
+    function renderAdminReports() {
+      const reports = adminDashboard.reports || [];
+      adminReportCount.textContent = `显示 ${reports.length} 条`;
+      adminReportList.innerHTML = reports.length ? reports.map((report) => `
+        <article class="admin-report-card">
+          <div class="admin-user-head">
+            <h3>${escapeHtml(report.targetTitle)}</h3>
+            <span class="status-badge ${report.status === 'pending' ? 'warn' : report.status === 'resolved' ? 'done' : 'closed'}">${escapeHtml(report.status === 'pending' ? '待处理' : report.status === 'resolved' ? '已处理' : '已驳回')}</span>
+          </div>
+          <div class="admin-report-meta">
+            <span>${escapeHtml(report.targetType === 'product' ? '商品' : report.targetType === 'task' ? '任务' : '用户')}</span>
+            <span>${escapeHtml(reportReasonText(report.reason))}</span>
+            <span>举报人：${escapeHtml(report.reporterName)}</span>
+            <span>${escapeHtml(formatAdminDate(report.createdAt, ''))}</span>
+          </div>
+          <p>${escapeHtml(report.description)}</p>
+          ${report.resolution ? `<p><strong>处理结果：</strong>${escapeHtml(report.resolution)}</p>` : ''}
+          ${['pending', 'reviewing'].includes(report.status) ? `
+            <div class="admin-report-actions">
+              <button class="mini-btn" data-report-action="dismiss" data-report-id="${report.id}">驳回举报</button>
+              <button class="mini-btn primary" data-report-action="resolve" data-report-id="${report.id}">标记已处理</button>
+              ${report.targetOwnerId ? `<button class="mini-btn danger" data-report-action="disable_target" data-report-id="${report.id}">停用发布者</button>` : ''}
+            </div>` : ''}
+        </article>
+      `).join('') : '<div class="empty-state">当前筛选下没有举报工单。</div>';
+    }
+
     async function loadAdminDashboard(options = {}) {
       if (!currentUser()?.isAdmin) return;
       const requestSequence = ++adminRequestSequence;
@@ -2455,20 +2846,23 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       adminMetrics.setAttribute('aria-busy', 'true');
       if (!options.quiet) {
         adminUserList.innerHTML = '<div class="empty-state">正在安全读取用户信息…</div>';
+        adminReportList.innerHTML = '<div class="empty-state">正在读取举报工单…</div>';
       }
       const params = new URLSearchParams({
         query: adminSearch.value.trim(),
         status: adminStatusFilter.value
       });
       try {
-        const [overviewData, usersData] = await Promise.all([
+        const [overviewData, usersData, reportsData] = await Promise.all([
           apiRequest('/api/admin/overview'),
-          apiRequest(`/api/admin/users?${params}`)
+          apiRequest(`/api/admin/users?${params}`),
+          apiRequest(`/api/admin/reports?status=${encodeURIComponent(adminReportStatus.value)}`)
         ]);
         if (requestSequence !== adminRequestSequence) return;
-        adminDashboard = { overview: overviewData.overview, users: usersData.users };
+        adminDashboard = { overview: overviewData.overview, users: usersData.users, reports: reportsData.reports };
         renderAdminOverview();
         renderAdminUsers();
+        renderAdminReports();
       } catch (error) {
         if (requestSequence !== adminRequestSequence) return;
         adminMetrics.setAttribute('aria-busy', 'false');
@@ -2476,8 +2870,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         adminSummaryFoot.textContent = `数据更新失败：${error.message}`;
         adminUserCount.textContent = '读取失败';
         adminUserList.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}<div class="action-row" style="justify-content:center;"><button class="mini-btn primary" data-admin-retry>重新加载</button></div></div>`;
+        adminReportCount.textContent = '读取失败';
+        adminReportList.innerHTML = '<div class="empty-state">举报工单读取失败。</div>';
         if (error.status === 401 || error.status === 403) {
-          adminDashboard = { overview: null, users: [] };
+          adminDashboard = { overview: null, users: [], reports: [] };
           adminUserList.innerHTML = '<div class="empty-state">管理员登录状态已失效，用户信息已清除。</div>';
           showToast('管理员登录状态已失效');
           await hydrateFromServer().catch(() => {});
@@ -2495,13 +2891,15 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     async function manageUser(button) {
       const action = button.dataset.adminAction;
       const userId = button.dataset.userId;
-      const actionLabels = { disable: '停用账号', enable: '恢复账号', force_logout: '强制退出' };
+      const actionLabels = { disable: '停用账号', enable: '恢复账号', force_logout: '强制退出', verify_identity: '人工认证' };
       const targetUser = adminDashboard.users.find((user) => user.id === userId);
       const targetLabel = targetUser ? `“${targetUser.name}”（${targetUser.studentId}）` : '该用户';
       const confirmation = action === 'disable'
         ? `确定停用${targetLabel}吗？这会立即退出其全部会话，并禁止再次登录。`
         : action === 'force_logout'
           ? `确定强制退出${targetLabel}吗？账号不会被停用，之后仍可重新登录。`
+          : action === 'verify_identity'
+            ? `确认已经线下核验${targetLabel}的北工大学生身份吗？通过后该账号可以发布、接单和聊天。`
           : '';
       if (confirmation && !window.confirm(confirmation)) return;
       button.disabled = true;
@@ -2511,6 +2909,29 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           body: JSON.stringify({ action })
         });
         showToast(`${actionLabels[action]}成功`);
+        await loadAdminDashboard({ quiet: true });
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function manageReport(button) {
+      const action = button.dataset.reportAction;
+      const reportId = button.dataset.reportId;
+      const labels = { dismiss: '驳回举报', resolve: '标记已处理', disable_target: '停用发布者并处理举报' };
+      const confirmation = action === 'disable_target'
+        ? '确定违规成立并停用被举报内容的发布者吗？该用户会立即退出且无法再次登录。'
+        : `确定${labels[action]}吗？`;
+      if (!window.confirm(confirmation)) return;
+      button.disabled = true;
+      try {
+        await apiRequest(`/api/admin/reports/${encodeURIComponent(reportId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ action })
+        });
+        showToast(`${labels[action]}成功`);
         await loadAdminDashboard({ quiet: true });
       } catch (error) {
         showToast(error.message);
@@ -2556,11 +2977,15 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       sheetLocation.textContent = product.location;
       sheetState.textContent = statusText(product.status);
       sheetCondition.textContent = product.condition || '未填写';
-      if (product.image) {
+      const safeImage = safeProductImageSource(product.image);
+      if (safeImage) {
         sheetImg.className = 'sheet-image product-img uploaded';
-        sheetImg.innerHTML = `<img src="${product.image}" alt="${escapeHtml(product.title)}">`;
+        const image = document.createElement('img');
+        image.src = safeImage;
+        image.alt = product.title;
+        sheetImg.replaceChildren(image);
       } else {
-        sheetImg.className = `sheet-image product-img ${product.imgClass}`;
+        sheetImg.className = `sheet-image product-img ${safeProductImageClass(product.imgClass)}`;
         sheetImg.textContent = product.symbol;
       }
 
@@ -2573,16 +2998,17 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       sheetHint.textContent = locked
         ? '卖家已与一位买家谈定，其他买家暂时不能咨询。只有卖家取消当前交易后，商品才会恢复在售。'
         : '平台不收集宿舍号。建议选择食堂门口、教学楼大厅、校门口等公共地点交易。';
+      reportProductButton.hidden = Boolean(mine);
+      blockSellerButton.hidden = Boolean(mine);
+      reportProductButton.dataset.productId = product.id;
+      blockSellerButton.dataset.userId = product.sellerId;
       sheetMask.classList.add('open');
       sheetMask.setAttribute('aria-hidden', 'false');
     }
 
     async function requestWant() {
+      if (!ensureVerified()) return;
       const user = currentUser();
-      if (!user) {
-        openLogin();
-        return;
-      }
       const product = state.products.find((item) => item.id === activeProductId);
       if (!product) return;
       if (product.sellerId === user.id) {
@@ -2636,6 +3062,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         openLogin();
         return;
       }
+      if (!ensureVerified()) return;
       const isTask = postMode === 'task';
       const title = document.getElementById('title').value.trim();
       const category = document.getElementById('category').value;
@@ -2859,6 +3286,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         openLogin();
         return;
       }
+      if (!ensureVerified()) return;
       activeChat = { productId, peerId };
       chatTitle.textContent = state.users[peerId]?.name || peerId;
       chatSubTitle.textContent = product.sellerId === user.id ? '买家咨询中' : '和卖家沟通面交';
@@ -2889,6 +3317,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       const user = currentUser();
       const text = chatInput.value.trim();
       if (!user || !activeChat || !text) return;
+      if (!ensureVerified()) return;
       try {
         await apiRequest('/api/messages', {
           method: 'POST',
@@ -2910,12 +3339,66 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       });
       await hydrateFromServer();
       showToast(action === 'take'
-        ? '接单成功，任务已开始'
+        ? '接单申请已提交，等待发布者确认'
         : action === 'done'
           ? '任务已完成，感谢参与'
           : action === 'withdraw'
             ? '已放弃接单，任务重新开放'
           : '任务已取消');
+    }
+
+    async function submitTaskApplicationAction(applicationId, action) {
+      await apiRequest(`/api/task-applications/${encodeURIComponent(applicationId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action })
+      });
+      await hydrateFromServer();
+      showToast(action === 'accept'
+        ? '已确认接单者，任务正式开始'
+        : action === 'reject'
+          ? '已拒绝这份接单申请'
+          : '接单申请已撤回');
+    }
+
+    async function blockUserById(targetUserId) {
+      if (!currentUser()) {
+        openLogin();
+        return;
+      }
+      if (!window.confirm('屏蔽后，你们双方的商品、任务和消息会互相隐藏。确定继续吗？')) return;
+      await apiRequest('/api/blocks', {
+        method: 'POST',
+        body: JSON.stringify({ targetUserId })
+      });
+      closeProductSheet();
+      await hydrateFromServer();
+      showToast('已屏蔽该用户');
+    }
+
+    async function submitActiveReport() {
+      if (!activeReportTarget) return;
+      if (!reportReason.value || !reportDescription.value.trim()) {
+        showToast('请选择举报原因并补充问题说明');
+        return;
+      }
+      submitReport.disabled = true;
+      try {
+        await apiRequest('/api/reports', {
+          method: 'POST',
+          body: JSON.stringify({
+            targetType: activeReportTarget.targetType,
+            targetId: activeReportTarget.targetId,
+            reason: reportReason.value,
+            description: reportDescription.value.trim()
+          })
+        });
+        closeReportDialog();
+        showToast('举报已提交，管理员会尽快核查');
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        submitReport.disabled = false;
+      }
     }
 
     navButtons.forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
@@ -2990,6 +3473,17 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       if (!publishing) publishRequestKey = '';
     });
     wantButton.addEventListener('click', requestWant);
+    reportProductButton.addEventListener('click', () => {
+      const product = state.products.find((item) => item.id === reportProductButton.dataset.productId);
+      if (product) openReport('product', product.id, product.title);
+    });
+    blockSellerButton.addEventListener('click', async () => {
+      try {
+        await blockUserById(blockSellerButton.dataset.userId);
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
     closeSheet.addEventListener('click', closeProductSheet);
     sheetMask.addEventListener('click', (event) => {
       if (event.target === sheetMask) closeProductSheet();
@@ -2999,9 +3493,15 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     loginMask.addEventListener('click', (event) => {
       if (event.target === loginMask) closeLogin();
     });
+    cancelReport.addEventListener('click', closeReportDialog);
+    submitReport.addEventListener('click', submitActiveReport);
+    reportMask.addEventListener('click', (event) => {
+      if (event.target === reportMask) closeReportDialog();
+    });
     switchLoginMode.addEventListener('click', () => {
       setLoginMode(loginMode === 'login' ? 'register' : 'login');
     });
+    forgotPasswordButton.addEventListener('click', () => setLoginMode('forgot'));
 
     studentIdInput.addEventListener('input', () => {
       studentIdInput.value = studentIdInput.value.toUpperCase();
@@ -3012,6 +3512,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       const id = normalizeStudentId(studentIdInput.value);
       studentIdInput.value = id;
       const password = studentPassword.value;
+      const email = schoolEmailInput.value.trim().toLowerCase();
+      const code = authCodeInput.value.trim();
       if (!id) {
         showToast('请输入学号');
         return;
@@ -3021,21 +3523,57 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         showToast(STUDENT_ID_FORMAT_MESSAGE);
         return;
       }
-      if (!password) {
+      if (!password && loginMode !== 'forgot') {
         showToast('请输入密码');
+        return;
+      }
+      if (['forgot', 'reset'].includes(loginMode) && !email) {
+        showToast('请输入已认证的北工大校内邮箱');
+        return;
+      }
+      if (loginMode === 'reset' && !/^\d{6}$/.test(code)) {
+        showToast('请输入邮件中的6位数字验证码');
+        return;
+      }
+      if (['register', 'reset'].includes(loginMode) && (password.length < 8 || password.length > 72)) {
+        showToast('密码长度需要为8-72位');
         return;
       }
       confirmLogin.disabled = true;
       try {
-        const endpoint = loginMode === 'register' ? '/api/auth/register' : '/api/auth/login';
-        await apiRequest(endpoint, {
-          method: 'POST',
-          body: JSON.stringify({ studentId: id, password })
-        });
-        await hydrateFromServer();
-        closeLogin();
-        renderAll();
-        showToast(loginMode === 'register' ? '注册成功，已登录' : '登录成功');
+        if (loginMode === 'forgot') {
+          const result = await apiRequest('/api/auth/forgot-password', {
+            method: 'POST',
+            body: JSON.stringify({ studentId: id, schoolEmail: email })
+          });
+          setLoginMode('reset');
+          showToast(result.message);
+        } else if (loginMode === 'reset') {
+          const result = await apiRequest('/api/auth/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ studentId: id, schoolEmail: email, code, newPassword: password })
+          });
+          studentPassword.value = '';
+          authCodeInput.value = '';
+          setLoginMode('login');
+          showToast(result.message);
+        } else {
+          const endpoint = loginMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+          const result = await apiRequest(endpoint, {
+            method: 'POST',
+            body: JSON.stringify({ studentId: id, password, schoolEmail: loginMode === 'register' ? email : undefined })
+          });
+          const completedMode = loginMode;
+          await hydrateFromServer();
+          closeLogin();
+          renderAll();
+          if (completedMode === 'register') {
+            switchTab('profile');
+            showToast(result.verificationSent ? '注册成功，验证码已发送到校内邮箱' : '注册成功，请完成校园身份认证');
+          } else {
+            showToast(currentUser()?.isVerified ? '登录成功' : '登录成功，请先完成校园身份认证');
+          }
+        }
       } catch (error) {
         showToast(error.message);
       } finally {
@@ -3047,6 +3585,12 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       if (!button) return;
       const action = button.dataset.action;
       if (action === 'open-chat') openChat(button.dataset.productId, button.dataset.peerId);
+      if (action === 'read-notification' || action === 'read-all-notifications') {
+        apiRequest('/api/notifications/read', {
+          method: 'PATCH',
+          body: JSON.stringify({ notificationId: action === 'read-all-notifications' ? 'all' : button.dataset.notificationId })
+        }).then(hydrateFromServer).catch((error) => showToast(error.message));
+      }
     });
     chatProductBar.addEventListener('click', async (event) => {
       const button = event.target.closest('[data-action]');
@@ -3059,6 +3603,18 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       renderChat();
     });
     profileList.addEventListener('click', async (event) => {
+      const applicationButton = event.target.closest('[data-task-application-action]');
+      if (applicationButton) {
+        try {
+          await submitTaskApplicationAction(
+            applicationButton.dataset.applicationId,
+            applicationButton.dataset.taskApplicationAction
+          );
+        } catch (error) {
+          showToast(error.message);
+        }
+        return;
+      }
       const button = event.target.closest('[data-action]');
       if (!button) return;
       const action = button.dataset.action;
@@ -3078,6 +3634,60 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         if (!task) return;
         try {
           await submitTaskAction(task, action === 'task-done' ? 'done' : action === 'task-withdraw' ? 'withdraw' : 'cancel');
+        } catch (error) {
+          showToast(error.message);
+        }
+      } else if (action === 'send-verification-code') {
+        const email = document.getElementById('profileSchoolEmail')?.value.trim();
+        button.disabled = true;
+        try {
+          await apiRequest('/api/auth/request-verification', {
+            method: 'POST',
+            body: JSON.stringify({ schoolEmail: email })
+          });
+          await hydrateFromServer();
+          showToast('验证码已发送到校内邮箱');
+        } catch (error) {
+          showToast(error.message);
+        } finally {
+          button.disabled = false;
+        }
+      } else if (action === 'save-school-email') {
+        const email = document.getElementById('profileSchoolEmail')?.value.trim();
+        button.disabled = true;
+        try {
+          const result = await apiRequest('/api/auth/school-email', {
+            method: 'PATCH',
+            body: JSON.stringify({ schoolEmail: email })
+          });
+          await hydrateFromServer();
+          renderProfile();
+          showToast(result.message);
+        } catch (error) {
+          showToast(error.message);
+        } finally {
+          button.disabled = false;
+        }
+      } else if (action === 'verify-email-code') {
+        const code = document.getElementById('profileVerificationCode')?.value.trim();
+        button.disabled = true;
+        try {
+          await apiRequest('/api/auth/verify-email', {
+            method: 'POST',
+            body: JSON.stringify({ code })
+          });
+          await hydrateFromServer();
+          showToast('校园身份认证成功');
+        } catch (error) {
+          showToast(error.message);
+        } finally {
+          button.disabled = false;
+        }
+      } else if (action === 'unblock-user') {
+        try {
+          await apiRequest(`/api/blocks/${encodeURIComponent(button.dataset.userId)}`, { method: 'DELETE' });
+          await hydrateFromServer();
+          showToast('已取消屏蔽');
         } catch (error) {
           showToast(error.message);
         }
@@ -3112,6 +3722,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       adminSearchTimer = window.setTimeout(() => loadAdminDashboard(), 250);
     });
     adminStatusFilter.addEventListener('change', () => loadAdminDashboard());
+    adminReportStatus.addEventListener('change', () => loadAdminDashboard({ quiet: true }));
     adminUserList.addEventListener('click', (event) => {
       const retry = event.target.closest('[data-admin-retry]');
       if (retry) {
@@ -3120,6 +3731,15 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       }
       const button = event.target.closest('[data-admin-action]');
       if (button) manageUser(button);
+    });
+    adminReportList.addEventListener('click', (event) => {
+      const retry = event.target.closest('[data-admin-retry]');
+      if (retry) {
+        loadAdminDashboard();
+        return;
+      }
+      const button = event.target.closest('[data-report-action]');
+      if (button) manageReport(button);
     });
     backToMessages.addEventListener('click', () => switchTab('messages'));
     document.getElementById('listBack').addEventListener('click', () => switchTab('home'));
@@ -3132,6 +3752,32 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       });
     });
     taskList.addEventListener('click', async (event) => {
+      const reportButton = event.target.closest('[data-report-type]');
+      if (reportButton) {
+        openReport(reportButton.dataset.reportType, reportButton.dataset.reportId, reportButton.dataset.reportTitle);
+        return;
+      }
+      const blockButton = event.target.closest('[data-block-user-id]');
+      if (blockButton) {
+        try {
+          await blockUserById(blockButton.dataset.blockUserId);
+        } catch (error) {
+          showToast(error.message);
+        }
+        return;
+      }
+      const applicationButton = event.target.closest('[data-task-application-action]');
+      if (applicationButton) {
+        try {
+          await submitTaskApplicationAction(
+            applicationButton.dataset.applicationId,
+            applicationButton.dataset.taskApplicationAction
+          );
+        } catch (error) {
+          showToast(error.message);
+        }
+        return;
+      }
       const button = event.target.closest('[data-task-action]');
       if (!button) return;
       const action = button.dataset.taskAction;
@@ -3139,7 +3785,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       if (!task) return;
       const user = currentUser();
       if (action === 'take') {
-        if (!user) { openLogin(); return; }
+        if (!ensureVerified()) return;
         if (user.id === task.publisherId) { showToast('不能接自己发布的任务'); return; }
         if (task.deadlineAt && task.deadlineAt <= Date.now()) { showToast('任务已过期，请刷新页面'); renderTasks(); return; }
       }

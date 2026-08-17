@@ -30,7 +30,15 @@ jobs:
 
       - name: Install and start the application
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+          APP_DATABASE_URL: ${{ secrets.APP_DATABASE_URL }}
+          AUTH_TOKEN_SECRET: ${{ secrets.AUTH_TOKEN_SECRET }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -39,7 +47,7 @@ jobs:
           port: 22
           timeout: 60s
           command_timeout: 8m
-          envs: DATABASE_URL
+          envs: MIGRATION_DATABASE_URL,APP_DATABASE_URL,AUTH_TOKEN_SECRET,SMTP_HOST,SMTP_PORT,SMTP_SECURE,SMTP_USER,SMTP_PASS,MAIL_FROM
           script: |
             set -eu
 
@@ -52,8 +60,16 @@ jobs:
 
             DOMAIN=yanxiaobei.wangpangxie.top
 
-            if [ -z "${DATABASE_URL:-}" ]; then
-              echo "Missing GitHub Actions secret: DATABASE_URL" >&2
+            if [ -z "${MIGRATION_DATABASE_URL:-}" ]; then
+              echo "Missing GitHub Actions secret: MIGRATION_DATABASE_URL" >&2
+              exit 1
+            fi
+            if [ -z "${APP_DATABASE_URL:-}" ]; then
+              echo "Missing GitHub Actions secret: APP_DATABASE_URL" >&2
+              exit 1
+            fi
+            if [ -z "${AUTH_TOKEN_SECRET:-}" ]; then
+              echo "Missing GitHub Actions secret: AUTH_TOKEN_SECRET" >&2
               exit 1
             fi
 
@@ -61,7 +77,9 @@ jobs:
             cd "$RELEASE_DIR"
             npm ci --omit=dev
             npm run check
+            export DATABASE_URL="$MIGRATION_DATABASE_URL"
             npm run db:migrate
+            npm run db:configure-role
             if [ ! -f "$APP_DIR/data/.postgres-migrated" ]; then
               DATA_DIR="$APP_DIR/data" npm run db:import-json
               touch "$APP_DIR/data/.postgres-migrated"
@@ -73,7 +91,17 @@ jobs:
             chmod 750 "$APP_DIR/data"
 
             umask 077
-            printf 'DATABASE_URL=%s\n' "$DATABASE_URL" > /etc/yanxiaobei-market.env
+            {
+              printf 'DATABASE_URL=%s\n' "$APP_DATABASE_URL"
+              printf 'AUTH_TOKEN_SECRET=%s\n' "$AUTH_TOKEN_SECRET"
+              printf 'APP_BASE_URL=%s\n' "https://${DOMAIN}"
+              printf 'SMTP_HOST=%s\n' "${SMTP_HOST:-}"
+              printf 'SMTP_PORT=%s\n' "${SMTP_PORT:-587}"
+              printf 'SMTP_SECURE=%s\n' "${SMTP_SECURE:-false}"
+              printf 'SMTP_USER=%s\n' "${SMTP_USER:-}"
+              printf 'SMTP_PASS=%s\n' "${SMTP_PASS:-}"
+              printf 'MAIL_FROM=%s\n' "${MAIL_FROM:-}"
+            } > /etc/yanxiaobei-market.env
             chown root:root /etc/yanxiaobei-market.env
             chmod 600 /etc/yanxiaobei-market.env
 
@@ -116,7 +144,7 @@ jobs:
                     proxy_http_version 1.1;
                     proxy_set_header Host $host;
                     proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-For $remote_addr;
                     proxy_set_header X-Forwarded-Proto $scheme;
                 }
             }

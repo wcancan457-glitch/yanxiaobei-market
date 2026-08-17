@@ -28,13 +28,25 @@ async function main() {
       continue;
     }
 
-    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-    await pool.query(sql);
-    await pool.query(
-      'insert into schema_migrations (filename) values ($1) on conflict do nothing',
-      [file]
-    );
-    console.log(`Applied migration: ${file}`);
+    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8')
+      .replace(/^\s*begin\s*;\s*/i, '')
+      .replace(/\s*commit\s*;\s*$/i, '');
+    const client = await pool.connect();
+    try {
+      await client.query('begin');
+      await client.query(sql);
+      await client.query(
+        'insert into schema_migrations (filename) values ($1)',
+        [file]
+      );
+      await client.query('commit');
+      console.log(`Applied migration: ${file}`);
+    } catch (error) {
+      await client.query('rollback').catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }
 

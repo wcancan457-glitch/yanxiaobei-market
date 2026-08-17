@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const db = require('./database');
+const mailer = require('./mailer');
+const { sanitizeProductImage, sanitizeImageClass } = require('./content-security');
 const {
   FORMAT_MESSAGE: STUDENT_ID_FORMAT_MESSAGE,
   normalizeStudentId,
@@ -13,6 +15,10 @@ const root = __dirname;
 const port = Number(process.env.PORT || 5177);
 const SESSION_COOKIE = 'yxb_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const AUTH_CODE_TTL_MS = 10 * 60 * 1000;
+const authTokenSecret = String(process.env.AUTH_TOKEN_SECRET || '');
+const emailDeliveryConfigured = mailer.configured && authTokenSecret.length >= 32;
+const rateBuckets = new Map();
 
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -37,6 +43,33 @@ function send(res, status, body, type = 'application/json; charset=utf-8') {
 function sendJson(res, status, value) {
   res.setHeader('Cache-Control', 'no-store');
   send(res, status, JSON.stringify(value));
+}
+
+function clientIp(req) {
+  const forwarded = String(req.headers['x-forwarded-for'] || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return forwarded.at(-1) || String(req.socket.remoteAddress || 'unknown');
+}
+
+function enforceRateLimit(req, scope, limit, windowMs, subject = '') {
+  const now = Date.now();
+  const identity = subject
+    ? `account:${String(subject).slice(0, 150)}`
+    : `ip:${clientIp(req)}`;
+  const key = `${scope}:${identity}`;
+  const active = (rateBuckets.get(key) || []).filter((timestamp) => now - timestamp < windowMs);
+  if (active.length >= limit) {
+    throw new db.AppError(429, '操作过于频繁，请稍后再试', 'rate_limited');
+  }
+  active.push(now);
+  rateBuckets.set(key, active);
+  if (rateBuckets.size > 2_000) {
+    for (const [bucketKey, timestamps] of rateBuckets.entries()) {
+      if (!timestamps.some((timestamp) => now - timestamp < 60 * 60 * 1000)) rateBuckets.delete(bucketKey);
+    }
+  }
 }
 
 function readBody(req) {
@@ -138,6 +171,61 @@ async function requireAdmin(req) {
   return user;
 }
 
+async function requireVerifiedUser(req) {
+  const user = await requireUser(req);
+  if (!user.isVerified) {
+    throw new db.AppError(
+      403,
+      '请先完成北工大校园身份认证，再使用发布、接单和聊天功能',
+      'identity_verification_required'
+    );
+  }
+  return user;
+}
+
+function schoolEmail(value, optional = false) {
+  const email = String(value || '').trim().toLowerCase().slice(0, 120);
+  if (!email && optional) return '';
+  if (!/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@bjut\.edu\.cn$/i.test(email)) {
+    throw new db.AppError(400, '请输入有效的 @bjut.edu.cn 校内邮箱');
+  }
+  return email;
+}
+
+function validatePassword(password) {
+  if (password.length < 8 || password.length > 72) {
+    throw new db.AppError(400, '密码长度需要为8-72位');
+  }
+}
+
+function authCodeHash(userId, purpose, destination, code) {
+  return crypto.createHmac('sha256', authTokenSecret)
+    .update(`${userId}:${purpose}:${String(destination).toLowerCase()}:${code}`)
+    .digest('hex');
+}
+
+async function sendAuthCode(user, purpose) {
+  if (!emailDeliveryConfigured) {
+    throw new db.AppError(503, '邮件发送服务尚未配置，可暂时联系管理员人工认证', 'mail_not_configured');
+  }
+  if (!user.school_email) throw new db.AppError(400, '账号尚未绑定校内邮箱');
+  const destination = schoolEmail(user.school_email);
+  const code = String(crypto.randomInt(100000, 1000000));
+  const tokenHash = authCodeHash(user.id, purpose, destination, code);
+  await db.issueAuthToken({
+    userId: user.id,
+    purpose,
+    tokenHash,
+    expiresAt: new Date(Date.now() + AUTH_CODE_TTL_MS)
+  });
+  try {
+    await mailer.sendCode({ to: destination, purpose, code });
+  } catch (error) {
+    await db.deleteAuthToken(tokenHash).catch(() => {});
+    throw new db.AppError(503, '验证码邮件发送失败，请稍后重试', 'mail_delivery_failed');
+  }
+}
+
 function text(value, maxLength, fallback = '') {
   const result = String(value ?? '').trim().slice(0, maxLength);
   return result || fallback;
@@ -161,6 +249,14 @@ function positiveNumber(value, label) {
 }
 
 function productInput(body) {
+  let image;
+  let imgClass;
+  try {
+    image = sanitizeProductImage(body.image);
+    imgClass = sanitizeImageClass(body.imgClass);
+  } catch (error) {
+    throw new db.AppError(400, error.message, 'invalid_product_image');
+  }
   const input = {
     title: text(body.title, 100),
     category: text(body.category, 30),
@@ -170,8 +266,8 @@ function productInput(body) {
     price: positiveNumber(body.price, '价格'),
     location: text(body.location, 120),
     desc: text(body.desc, 5000),
-    image: text(body.image, 6_000_000),
-    imgClass: text(body.imgClass, 30),
+    image,
+    imgClass,
     symbol: text(body.symbol, 10)
   };
   if (!input.title || !input.category || !input.campus || !input.campusText || !input.location || !input.desc) {
@@ -250,23 +346,39 @@ async function handleApi(req, res, requestUrl) {
   if (pathname === '/api/auth/register' && req.method === 'POST') {
     const body = await readJsonBody(req);
     const studentId = normalizeStudentId(body.studentId);
+    enforceRateLimit(req, 'register-ip', 50, 60 * 60 * 1000);
+    enforceRateLimit(req, 'register-account', 5, 60 * 60 * 1000, studentId);
     const password = String(body.password || '');
+    const registeredEmail = schoolEmail(body.schoolEmail, true) || null;
     if (!validStudentId(studentId)) throw new db.AppError(400, STUDENT_ID_FORMAT_MESSAGE);
-    if (password.length < 6 || password.length > 72) throw new db.AppError(400, '密码长度需要为6-72位');
+    validatePassword(password);
     const user = await db.createUser({
       studentId,
       passwordHash: passwordHash(password),
       name: text(body.name, 30, `同学${studentId.slice(-4)}`),
-      campus: text(body.campus, 30, '平乐园校区')
+      campus: text(body.campus, 30, '平乐园校区'),
+      schoolEmail: registeredEmail
     });
     await createSession(req, res, user.id);
-    sendJson(res, 201, { ok: true, user });
+    let verificationSent = false;
+    if (registeredEmail && emailDeliveryConfigured) {
+      const stored = await db.findUserByStudentId(studentId);
+      try {
+        await sendAuthCode(stored, 'verify_email');
+        verificationSent = true;
+      } catch (error) {
+        console.error('Failed to send registration verification email:', error.message);
+      }
+    }
+    sendJson(res, 201, { ok: true, user, verificationSent });
     return true;
   }
 
   if (pathname === '/api/auth/login' && req.method === 'POST') {
     const body = await readJsonBody(req);
     const studentId = normalizeStudentId(body.studentId);
+    enforceRateLimit(req, 'login-ip', 100, 15 * 60 * 1000);
+    enforceRateLimit(req, 'login-account', 10, 15 * 60 * 1000, studentId);
     const password = String(body.password || '');
     const stored = await db.findUserByStudentId(studentId);
     if (!stored || !passwordMatches(password, stored.password_hash)) {
@@ -296,10 +408,102 @@ async function handleApi(req, res, requestUrl) {
     return true;
   }
 
+  if (pathname === '/api/auth/request-verification' && req.method === 'POST') {
+    const user = await requireUser(req);
+    enforceRateLimit(req, 'request-verification', 5, 60 * 60 * 1000, user.id);
+    if (user.isVerified) throw new db.AppError(409, '该账号已经完成校园身份认证');
+    const body = await readJsonBody(req);
+    const email = schoolEmail(body.schoolEmail || user.schoolEmail);
+    const updated = await db.updateSchoolEmail(user.id, email);
+    const stored = await db.findUserByStudentId(updated.studentId);
+    await sendAuthCode(stored, 'verify_email');
+    sendJson(res, 200, { ok: true, message: '验证码已发送到校内邮箱' });
+    return true;
+  }
+
+  if (pathname === '/api/auth/school-email' && req.method === 'PATCH') {
+    const user = await requireUser(req);
+    if (user.isVerified) throw new db.AppError(409, '已认证账号不能自行更换校内邮箱');
+    const body = await readJsonBody(req);
+    const email = schoolEmail(body.schoolEmail);
+    const updated = await db.updateSchoolEmail(user.id, email);
+    sendJson(res, 200, { ok: true, user: updated, message: '校内邮箱已保存，可联系管理员人工核验' });
+    return true;
+  }
+
+  if (pathname === '/api/auth/verify-email' && req.method === 'POST') {
+    const user = await requireUser(req);
+    enforceRateLimit(req, 'verify-email', 10, 15 * 60 * 1000, user.id);
+    if (user.isVerified) {
+      sendJson(res, 200, { ok: true, user });
+      return true;
+    }
+    const body = await readJsonBody(req);
+    const code = String(body.code || '').trim();
+    if (!/^\d{6}$/.test(code)) throw new db.AppError(400, '请输入6位数字验证码');
+    await db.consumeAuthToken({
+      userId: user.id,
+      purpose: 'verify_email',
+      tokenHash: authCodeHash(user.id, 'verify_email', schoolEmail(user.schoolEmail), code)
+    });
+    const verified = await db.markIdentityVerified(user.id, 'email', schoolEmail(user.schoolEmail));
+    sendJson(res, 200, { ok: true, user: verified });
+    return true;
+  }
+
+  if (pathname === '/api/auth/forgot-password' && req.method === 'POST') {
+    if (!emailDeliveryConfigured) {
+      throw new db.AppError(503, '邮件发送服务尚未配置，请联系管理员协助处理', 'mail_not_configured');
+    }
+    const body = await readJsonBody(req);
+    const studentId = normalizeStudentId(body.studentId);
+    const email = schoolEmail(body.schoolEmail);
+    enforceRateLimit(req, 'forgot-password-ip', 50, 60 * 60 * 1000);
+    enforceRateLimit(req, 'forgot-password-account', 5, 60 * 60 * 1000, studentId);
+    if (!validStudentId(studentId)) throw new db.AppError(400, STUDENT_ID_FORMAT_MESSAGE);
+    const user = await db.findVerifiedUserForReset(studentId, email);
+    if (user) await sendAuthCode(user, 'reset_password');
+    sendJson(res, 200, { ok: true, message: '如果学号与已认证邮箱匹配，验证码会发送到该邮箱' });
+    return true;
+  }
+
+  if (pathname === '/api/auth/reset-password' && req.method === 'POST') {
+    if (!emailDeliveryConfigured) {
+      throw new db.AppError(503, '邮件发送服务尚未配置，请联系管理员协助处理', 'mail_not_configured');
+    }
+    const body = await readJsonBody(req);
+    const studentId = normalizeStudentId(body.studentId);
+    const email = schoolEmail(body.schoolEmail);
+    enforceRateLimit(req, 'reset-password-ip', 100, 15 * 60 * 1000);
+    enforceRateLimit(req, 'reset-password-account', 10, 15 * 60 * 1000, studentId);
+    const code = String(body.code || '').trim();
+    const nextPassword = String(body.newPassword || '');
+    if (!validStudentId(studentId)) throw new db.AppError(400, STUDENT_ID_FORMAT_MESSAGE);
+    if (!/^\d{6}$/.test(code)) throw new db.AppError(400, '请输入6位数字验证码');
+    validatePassword(nextPassword);
+    const user = await db.findVerifiedUserForReset(studentId, email);
+    if (!user) throw new db.AppError(400, '验证码不正确或已过期', 'invalid_auth_code');
+    await db.consumeAuthToken({
+      userId: user.id,
+      purpose: 'reset_password',
+      tokenHash: authCodeHash(user.id, 'reset_password', email, code)
+    });
+    await db.resetUserPassword(user.id, passwordHash(nextPassword));
+    sendJson(res, 200, { ok: true, message: '密码已重置，请使用新密码登录' });
+    return true;
+  }
+
   if (pathname === '/api/bootstrap' && req.method === 'GET') {
     const user = await sessionUser(req);
     const state = await db.getBootstrap(user?.id || null);
-    sendJson(res, 200, { ...state, currentUser: user });
+    sendJson(res, 200, {
+      ...state,
+      currentUser: user,
+      authCapabilities: {
+        schoolEmailDomain: 'bjut.edu.cn',
+        emailDeliveryConfigured
+      }
+    });
     return true;
   }
 
@@ -314,7 +518,7 @@ async function handleApi(req, res, requestUrl) {
     await requireAdmin(req);
     const search = String(requestUrl.searchParams.get('query') || '');
     const requestedStatus = String(requestUrl.searchParams.get('status') || 'all');
-    const status = ['all', 'active', 'disabled', 'online'].includes(requestedStatus)
+    const status = ['all', 'active', 'disabled', 'online', 'unverified'].includes(requestedStatus)
       ? requestedStatus
       : 'all';
     const users = await db.getAdminUsers(search, status);
@@ -331,8 +535,33 @@ async function handleApi(req, res, requestUrl) {
     return true;
   }
 
+  if (pathname === '/api/admin/reports' && req.method === 'GET') {
+    await requireAdmin(req);
+    const requestedStatus = String(requestUrl.searchParams.get('status') || 'pending');
+    const status = ['all', 'pending', 'reviewing', 'resolved', 'dismissed'].includes(requestedStatus)
+      ? requestedStatus
+      : 'pending';
+    const reports = await db.getAdminReports(status);
+    sendJson(res, 200, { ok: true, reports });
+    return true;
+  }
+
+  const adminReportMatch = pathname.match(/^\/api\/admin\/reports\/([^/]+)$/);
+  if (adminReportMatch && req.method === 'PATCH') {
+    const admin = await requireAdmin(req);
+    const body = await readJsonBody(req);
+    const report = await db.manageReport(
+      admin.id,
+      adminReportMatch[1],
+      String(body.action || ''),
+      text(body.resolution, 500)
+    );
+    sendJson(res, 200, { ok: true, report });
+    return true;
+  }
+
   if (pathname === '/api/products' && req.method === 'POST') {
-    const user = await requireUser(req);
+    const user = await requireVerifiedUser(req);
     const product = await db.createProduct(
       user.id,
       productInput(await readJsonBody(req)),
@@ -367,7 +596,7 @@ async function handleApi(req, res, requestUrl) {
   }
 
   if (pathname === '/api/tasks' && req.method === 'POST') {
-    const user = await requireUser(req);
+    const user = await requireVerifiedUser(req);
     const task = await db.createTask(
       user.id,
       taskInput(await readJsonBody(req)),
@@ -379,15 +608,24 @@ async function handleApi(req, res, requestUrl) {
 
   const taskMatch = pathname.match(/^\/api\/tasks\/([^/]+)$/);
   if (taskMatch && req.method === 'PATCH') {
-    const user = await requireUser(req);
+    const user = await requireVerifiedUser(req);
     const body = await readJsonBody(req);
     const task = await db.updateTask(user.id, taskMatch[1], body.action);
     sendJson(res, 200, { ok: true, task });
     return true;
   }
 
+  const taskApplicationMatch = pathname.match(/^\/api\/task-applications\/([^/]+)$/);
+  if (taskApplicationMatch && req.method === 'PATCH') {
+    const user = await requireVerifiedUser(req);
+    const body = await readJsonBody(req);
+    const result = await db.manageTaskApplication(user.id, taskApplicationMatch[1], String(body.action || ''));
+    sendJson(res, 200, { ok: true, ...result });
+    return true;
+  }
+
   if (pathname === '/api/intents' && req.method === 'POST') {
-    const user = await requireUser(req);
+    const user = await requireVerifiedUser(req);
     const body = await readJsonBody(req);
     const result = await db.createIntent(user.id, text(body.productId, 100));
     sendJson(res, 201, { ok: true, ...result });
@@ -404,7 +642,7 @@ async function handleApi(req, res, requestUrl) {
   }
 
   if (pathname === '/api/messages' && req.method === 'POST') {
-    const user = await requireUser(req);
+    const user = await requireVerifiedUser(req);
     const body = await readJsonBody(req);
     const message = await db.createMessage(user.id, {
       productId: text(body.productId, 100),
@@ -412,6 +650,52 @@ async function handleApi(req, res, requestUrl) {
       text: text(body.text, 2000)
     });
     sendJson(res, 201, { ok: true, message });
+    return true;
+  }
+
+  if (pathname === '/api/notifications/read' && req.method === 'PATCH') {
+    const user = await requireUser(req);
+    const body = await readJsonBody(req);
+    const updated = await db.markNotificationsRead(user.id, text(body.notificationId, 100, 'all'));
+    sendJson(res, 200, { ok: true, updated });
+    return true;
+  }
+
+  if (pathname === '/api/blocks' && req.method === 'POST') {
+    const user = await requireUser(req);
+    const body = await readJsonBody(req);
+    const block = await db.blockUser(user.id, text(body.targetUserId, 100));
+    sendJson(res, 201, { ok: true, block });
+    return true;
+  }
+
+  const blockMatch = pathname.match(/^\/api\/blocks\/([^/]+)$/);
+  if (blockMatch && req.method === 'DELETE') {
+    const user = await requireUser(req);
+    await db.unblockUser(user.id, blockMatch[1]);
+    sendJson(res, 200, { ok: true });
+    return true;
+  }
+
+  if (pathname === '/api/reports' && req.method === 'POST') {
+    const user = await requireUser(req);
+    enforceRateLimit(req, 'report', 10, 60 * 60 * 1000, user.id);
+    const body = await readJsonBody(req);
+    const targetType = text(body.targetType, 20);
+    const reason = text(body.reason, 30);
+    if (!['product', 'task', 'user'].includes(targetType)) throw new db.AppError(400, '举报对象类型不合法');
+    if (!['spam', 'fraud', 'prohibited', 'harassment', 'privacy', 'other'].includes(reason)) {
+      throw new db.AppError(400, '请选择举报原因');
+    }
+    const description = text(body.description, 1000);
+    if (!description) throw new db.AppError(400, '请补充举报说明');
+    const report = await db.createReport(user.id, {
+      targetType,
+      targetId: text(body.targetId, 120),
+      reason,
+      description
+    });
+    sendJson(res, 201, { ok: true, report });
     return true;
   }
 

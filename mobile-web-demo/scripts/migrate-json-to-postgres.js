@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { databaseConfigured, pool, transaction } = require('../database');
 const { normalizeStudentId, validStudentId } = require('../student-id');
+const { sanitizeStoredProductImage, sanitizeImageClass } = require('../content-security');
 
 const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const authFile = path.join(dataDir, 'auth.json');
@@ -73,8 +74,9 @@ async function main() {
     const userIds = new Map();
     for (const user of users.values()) {
       const result = await client.query(
-        `insert into users (student_id, name, campus, password_hash)
-         values ($1, $2, $3, $4)
+        `insert into users
+          (student_id, name, campus, password_hash, email_verified_at, verification_method)
+         values ($1, $2, $3, $4, now(), 'legacy')
          on conflict (student_id) do update set
            name = excluded.name,
            campus = excluded.campus,
@@ -92,6 +94,18 @@ async function main() {
     for (const item of state.products || []) {
       const sellerId = userIds.get(String(item.sellerId));
       if (!sellerId) continue;
+      let safeImage = null;
+      let safeImageClass = 'img-guitar';
+      try {
+        safeImage = sanitizeStoredProductImage(item.image) || null;
+      } catch {
+        safeImage = null;
+      }
+      try {
+        safeImageClass = sanitizeImageClass(item.imgClass);
+      } catch {
+        safeImageClass = 'img-guitar';
+      }
       await client.query(
         `insert into products
           (id, title, category, item_condition, campus, campus_text, price, location, description,
@@ -125,8 +139,8 @@ async function main() {
           ['available', 'trading', 'sold', 'down'].includes(item.status) ? item.status : 'available',
           sellerId,
           userIds.get(String(item.buyerId)) || null,
-          item.image || null,
-          item.imgClass || null,
+          safeImage,
+          safeImageClass,
           item.symbol || null,
           asDate(item.createdAt)
         ]
