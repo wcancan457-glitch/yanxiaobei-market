@@ -35,6 +35,7 @@ function send(res, status, body, type = 'application/json; charset=utf-8') {
 }
 
 function sendJson(res, status, value) {
+  res.setHeader('Cache-Control', 'no-store');
   send(res, status, JSON.stringify(value));
 }
 
@@ -128,6 +129,12 @@ async function sessionUser(req) {
 async function requireUser(req) {
   const user = await sessionUser(req);
   if (!user) throw new db.AppError(401, '请先登录', 'authentication_required');
+  return user;
+}
+
+async function requireAdmin(req) {
+  const user = await requireUser(req);
+  if (!user.isAdmin) throw new db.AppError(403, '无管理员权限', 'admin_required');
   return user;
 }
 
@@ -245,7 +252,11 @@ async function handleApi(req, res, requestUrl) {
     if (!stored || !passwordMatches(password, stored.password_hash)) {
       throw new db.AppError(401, '学号或密码错误');
     }
-    const user = db.publicUser(stored, true);
+    if (stored.is_disabled) {
+      throw new db.AppError(403, '账号已停用，请联系平台管理员', 'account_disabled');
+    }
+    await db.recordLogin(stored.id);
+    const user = db.publicUser(stored, true, true);
     await createSession(req, res, user.id);
     sendJson(res, 200, { ok: true, user });
     return true;
@@ -269,6 +280,34 @@ async function handleApi(req, res, requestUrl) {
     const user = await sessionUser(req);
     const state = await db.getBootstrap(user?.id || null);
     sendJson(res, 200, { ...state, currentUser: user });
+    return true;
+  }
+
+  if (pathname === '/api/admin/overview' && req.method === 'GET') {
+    await requireAdmin(req);
+    const overview = await db.getAdminOverview();
+    sendJson(res, 200, { ok: true, overview });
+    return true;
+  }
+
+  if (pathname === '/api/admin/users' && req.method === 'GET') {
+    await requireAdmin(req);
+    const search = String(requestUrl.searchParams.get('query') || '');
+    const requestedStatus = String(requestUrl.searchParams.get('status') || 'all');
+    const status = ['all', 'active', 'disabled', 'online'].includes(requestedStatus)
+      ? requestedStatus
+      : 'all';
+    const users = await db.getAdminUsers(search, status);
+    sendJson(res, 200, { ok: true, users });
+    return true;
+  }
+
+  const adminUserMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)$/);
+  if (adminUserMatch && req.method === 'PATCH') {
+    const admin = await requireAdmin(req);
+    const body = await readJsonBody(req);
+    const result = await db.manageAdminUser(admin.id, adminUserMatch[1], String(body.action || ''));
+    sendJson(res, 200, { ok: true, result });
     return true;
   }
 

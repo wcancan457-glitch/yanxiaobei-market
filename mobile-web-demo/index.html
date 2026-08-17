@@ -58,7 +58,7 @@ button { border: 0; cursor: pointer; background: none; }
 input::placeholder, textarea::placeholder { color: #98A1B0; }
 
 .phone-shell {
-  width: min(100vw, 430px);
+  width: min(100%, 430px);
   min-height: 100vh;
   margin: 0 auto;
   background: var(--paper);
@@ -722,6 +722,112 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 }
 .mini-btn.primary { background: var(--blue-btn); color: #fff; }
 .mini-btn.danger { background: #FDE9E6; color: #C74337; }
+.mini-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ===== 管理后台 ===== */
+.phone-shell.in-admin .bottom-nav { display: none; }
+.phone-shell.in-admin .app { padding-bottom: 0; }
+.admin-view { min-height: 100vh; background: var(--paper); }
+.admin-content { padding: 16px 18px 28px; display: grid; gap: 18px; }
+.admin-privacy-note {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.admin-privacy-note svg {
+  width: 34px;
+  height: 34px;
+  padding: 7px;
+  border-radius: 12px;
+  background: #E4EFFE;
+  color: var(--blue-deep);
+}
+.admin-summary {
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--blue-deep);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(18, 61, 126, 0.24);
+}
+.admin-summary-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 17px 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+.admin-summary-head h2 { margin: 0; font-size: 17px; }
+.admin-summary-head span { color: #C9DBF5; font-size: 12px; }
+.admin-metrics { display: grid; grid-template-columns: 1fr 1fr; }
+.admin-metric { min-width: 0; padding: 15px 17px; display: grid; gap: 5px; }
+.admin-metric:nth-child(odd) { border-right: 1px solid rgba(255, 255, 255, 0.16); }
+.admin-metric:nth-child(-n + 2) { border-bottom: 1px solid rgba(255, 255, 255, 0.16); }
+.admin-metric strong { font-size: 28px; line-height: 1; font-variant-numeric: tabular-nums; }
+.admin-metric span { color: #C9DBF5; font-size: 12px; }
+.admin-summary-foot { padding: 0 17px 15px; color: #C9DBF5; font-size: 12px; line-height: 1.5; }
+.admin-user-section { display: grid; gap: 12px; }
+.admin-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.admin-section-title h2 { margin: 0; font-size: 19px; }
+.admin-section-title span { color: var(--muted); font-size: 12px; }
+.admin-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: 9px; }
+.admin-toolbar input, .admin-toolbar select {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 12px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  outline: none;
+}
+.admin-toolbar input:focus, .admin-toolbar select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(30, 111, 255, 0.12);
+}
+.admin-user-list { display: grid; gap: 10px; }
+.admin-user-card {
+  padding: 15px;
+  border-radius: 15px;
+  background: var(--card);
+  box-shadow: var(--shadow-1);
+}
+.admin-user-card.is-disabled { background: #F1EDE4; }
+.admin-user-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.admin-user-identity { min-width: 0; display: grid; gap: 4px; }
+.admin-user-identity strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
+.admin-student-id { color: var(--ink-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+.admin-user-status { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.admin-user-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.admin-user-meta span { display: grid; gap: 3px; color: var(--muted); font-size: 12px; }
+.admin-user-meta strong { color: var(--ink); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+.admin-user-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+.admin-user-actions .mini-btn, .admin-entry .mini-btn { min-height: 44px; padding: 0 16px; }
+.admin-entry {
+  background: var(--blue-deep);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(18, 61, 126, 0.2);
+}
+.admin-entry h3 { color: #fff; }
+.admin-entry p { color: #D6E4F8; }
+.admin-entry .mini-btn { margin-top: 12px; background: #fff; color: var(--blue-deep); }
+.admin-refresh { justify-self: end; }
+.admin-refresh svg { width: 18px; height: 18px; }
+.admin-view .list-header { grid-template-columns: 44px minmax(0, 1fr) 44px; }
+.admin-view .list-back { width: 44px; height: 44px; }
 
 /* ===== 聊天 ===== */
 .chat-log { display: grid; gap: 9px; max-height: 260px; overflow: auto; padding: 6px 0 12px; }
@@ -1324,6 +1430,54 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           </article>
         </div>
       </section>
+
+      <section class="view admin-view" id="admin" aria-label="用户管理后台">
+        <header class="list-header">
+          <button class="list-back" id="adminBack" type="button" aria-label="返回我的"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+          <div class="list-title">
+            <strong>管理后台</strong>
+            <span>仅管理员可见</span>
+          </div>
+          <button class="list-back admin-refresh" id="adminRefresh" type="button" aria-label="刷新管理数据"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6v5h-5"/><path d="M19 11a7.5 7.5 0 1 0 .2 5.8"/></svg></button>
+        </header>
+        <div class="admin-content">
+          <div class="admin-privacy-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.9 8.1 7 10 4.1-1.9 7-5.4 7-10V6l-7-3Z"/><path d="m9.2 12 1.8 1.8 3.9-4"/></svg>
+            <span>学号和登录信息仅管理员可见；管理员也无法查看密码，系统只保存加盐哈希。</span>
+          </div>
+          <section class="admin-summary" aria-labelledby="adminSummaryTitle">
+            <div class="admin-summary-head">
+              <h2 id="adminSummaryTitle">平台概况</h2>
+              <span id="adminUpdatedAt">等待刷新</span>
+            </div>
+            <div class="admin-metrics" id="adminMetrics" aria-busy="true">
+              <div class="admin-metric"><strong>—</strong><span>注册用户</span></div>
+              <div class="admin-metric"><strong>—</strong><span>近 15 分钟活跃</span></div>
+              <div class="admin-metric"><strong>—</strong><span>24 小时登录</span></div>
+              <div class="admin-metric"><strong>—</strong><span>近 7 天新增</span></div>
+            </div>
+            <div class="admin-summary-foot" id="adminSummaryFoot">正在读取平台数据…</div>
+          </section>
+          <section class="admin-user-section" aria-labelledby="adminUsersTitle">
+            <div class="admin-section-title">
+              <h2 id="adminUsersTitle">用户管理</h2>
+              <span id="adminUserCount">—</span>
+            </div>
+            <div class="admin-toolbar">
+              <input id="adminSearch" type="search" placeholder="搜索学号或昵称" aria-label="搜索用户">
+              <select id="adminStatusFilter" aria-label="筛选用户状态">
+                <option value="all">全部状态</option>
+                <option value="online">近 15 分钟活跃</option>
+                <option value="active">正常账号</option>
+                <option value="disabled">已停用</option>
+              </select>
+            </div>
+            <div class="admin-user-list" id="adminUserList" aria-live="polite">
+              <div class="empty-state">进入后台后加载用户信息。</div>
+            </div>
+          </section>
+        </div>
+      </section>
     </div>
 
     <section class="view" id="list">
@@ -1428,6 +1582,15 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const taskModule = document.getElementById('taskModule');
     const messageList = document.getElementById('messageList');
     const profileList = document.getElementById('profileList');
+    const adminBack = document.getElementById('adminBack');
+    const adminRefresh = document.getElementById('adminRefresh');
+    const adminMetrics = document.getElementById('adminMetrics');
+    const adminUpdatedAt = document.getElementById('adminUpdatedAt');
+    const adminSummaryFoot = document.getElementById('adminSummaryFoot');
+    const adminSearch = document.getElementById('adminSearch');
+    const adminStatusFilter = document.getElementById('adminStatusFilter');
+    const adminUserCount = document.getElementById('adminUserCount');
+    const adminUserList = document.getElementById('adminUserList');
     const postForm = document.getElementById('postForm');
     const publishButton = document.getElementById('publishButton');
     const postProductTab = document.getElementById('postProductTab');
@@ -1480,6 +1643,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     let loginMode = 'login';
     let publishing = false;
     let publishRequestKey = '';
+    let adminDashboard = { overview: null, users: [] };
+    let adminLoading = false;
+    let adminRequestSequence = 0;
+    let adminSearchTimer = null;
 
     const seedState = {
       currentUserId: '',
@@ -1663,7 +1830,12 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           : options.headers
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || '操作失败，请稍后重试');
+      if (!res.ok) {
+        const error = new Error(data.error || '操作失败，请稍后重试');
+        error.status = res.status;
+        error.code = data.code || 'request_failed';
+        throw error;
+      }
       return data;
     }
 
@@ -1718,15 +1890,21 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     }
 
     function switchTab(tabId) {
+      if (tabId === 'admin' && !currentUser()?.isAdmin) {
+        showToast('只有管理员可以进入管理后台');
+        tabId = 'profile';
+      }
       views.forEach((view) => view.classList.toggle('active', view.id === tabId));
       document.querySelectorAll('.nav-btn').forEach((button) => {
         button.classList.toggle('active', button.dataset.tab === tabId);
       });
       phoneShell.classList.toggle('in-chat', tabId === 'chat');
+      phoneShell.classList.toggle('in-admin', tabId === 'admin');
       if (tabId === 'messages') renderMessages();
       if (tabId === 'chat') renderChat();
       if (tabId === 'profile') renderProfile();
       if (tabId === 'list') renderList();
+      if (tabId === 'admin') loadAdminDashboard();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -2051,6 +2229,13 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         </div>
       `).join('') : '<p class="empty-state" style="margin-top:8px;">还没有发布过商品，去首页点发布吧。</p>';
       profileList.innerHTML = `
+        ${user.isAdmin ? `
+          <article class="profile-card admin-entry">
+            <h3>管理后台</h3>
+            <p>查看注册与登录情况，管理用户账号。用户隐私信息仅管理员可见。</p>
+            <button class="mini-btn" data-action="open-admin">进入管理后台</button>
+          </article>
+        ` : ''}
         <article class="profile-card">
           <h3>我的发布</h3>
           <p>共 ${myProducts.length} 件商品，${myProducts.filter((item) => item.status === 'trading').length} 件交易中，${sold} 件已售。</p>
@@ -2060,6 +2245,149 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         <article class="profile-card"><h3>账号与安全</h3><p>学号仅用于身份识别，不向普通用户展示。</p></article>
         <article class="profile-card"><h3>退出登录</h3><p><button class="mini-btn danger" data-action="logout">退出当前学号</button></p></article>
       `;
+    }
+
+    function formatAdminDate(timestamp, fallback = '从未登录') {
+      if (!timestamp) return fallback;
+      return new Intl.DateTimeFormat('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(new Date(timestamp));
+    }
+
+    function renderAdminOverview() {
+      const overview = adminDashboard.overview;
+      if (!overview) return;
+      adminMetrics.innerHTML = `
+        <div class="admin-metric"><strong>${overview.totalUsers}</strong><span>注册用户</span></div>
+        <div class="admin-metric"><strong>${overview.activeUsers}</strong><span>近 15 分钟活跃</span></div>
+        <div class="admin-metric"><strong>${overview.logins24h}</strong><span>24 小时登录</span></div>
+        <div class="admin-metric"><strong>${overview.newUsers7d}</strong><span>近 7 天新增</span></div>
+      `;
+      adminMetrics.setAttribute('aria-busy', 'false');
+      adminSummaryFoot.textContent = `有效账号 ${overview.enabledUsers} 个 · 有效会话 ${overview.validSessions} 个 · 近 15 分钟活跃会话 ${overview.activeSessions} 个 · 商品 ${overview.totalProducts} 件 · 任务 ${overview.totalTasks} 个`;
+      adminUpdatedAt.textContent = `更新于 ${new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date())}`;
+    }
+
+    function adminStatusHtml(user) {
+      if (user.isAdmin) return '<span class="status-badge">管理员</span>';
+      if (user.isDisabled) return '<span class="status-badge closed">已停用</span>';
+      if (user.activeSessions > 0) return '<span class="status-badge done">近 15 分钟活跃</span>';
+      return '<span class="status-badge">正常</span>';
+    }
+
+    function renderAdminUsers() {
+      const users = adminDashboard.users || [];
+      adminUserCount.textContent = `显示 ${users.length} 人`;
+      if (!users.length) {
+        adminUserList.innerHTML = '<div class="empty-state">没有符合当前条件的用户。</div>';
+        return;
+      }
+      adminUserList.innerHTML = users.map((user) => `
+        <article class="admin-user-card ${user.isDisabled ? 'is-disabled' : ''}">
+          <div class="admin-user-head">
+            <div class="admin-user-identity">
+              <strong>${escapeHtml(user.name)}</strong>
+              <span class="admin-student-id">${escapeHtml(user.studentId)}</span>
+            </div>
+            <div class="admin-user-status">${adminStatusHtml(user)}</div>
+          </div>
+          <div class="admin-user-meta">
+            <span>校区<strong>${escapeHtml(user.campus)}</strong></span>
+            <span>注册时间<strong>${escapeHtml(formatAdminDate(user.registeredAt, '未知'))}</strong></span>
+            <span>最后登录<strong>${escapeHtml(formatAdminDate(user.lastLoginAt))}</strong></span>
+            <span>登录与会话<strong>${user.loginCount} 次 · ${user.validSessions} 个有效会话</strong></span>
+            <span>发布商品<strong>${user.productCount} 件</strong></span>
+            <span>发布任务<strong>${user.taskCount} 个</strong></span>
+          </div>
+          <div class="admin-user-actions">
+            ${user.isAdmin
+              ? '<span class="status-badge">唯一管理员，账号受保护</span>'
+              : `
+                <button class="mini-btn ${user.isDisabled ? 'primary' : 'danger'}" data-admin-action="${user.isDisabled ? 'enable' : 'disable'}" data-user-id="${escapeHtml(user.id)}">${user.isDisabled ? '恢复账号' : '停用账号'}</button>
+                ${user.validSessions > 0 && !user.isDisabled
+                  ? `<button class="mini-btn" data-admin-action="force_logout" data-user-id="${escapeHtml(user.id)}">强制退出</button>`
+                  : ''}
+              `}
+          </div>
+        </article>
+      `).join('');
+    }
+
+    async function loadAdminDashboard(options = {}) {
+      if (!currentUser()?.isAdmin) return;
+      const requestSequence = ++adminRequestSequence;
+      adminLoading = true;
+      adminRefresh.disabled = true;
+      adminMetrics.setAttribute('aria-busy', 'true');
+      if (!options.quiet) {
+        adminUserList.innerHTML = '<div class="empty-state">正在安全读取用户信息…</div>';
+      }
+      const params = new URLSearchParams({
+        query: adminSearch.value.trim(),
+        status: adminStatusFilter.value
+      });
+      try {
+        const [overviewData, usersData] = await Promise.all([
+          apiRequest('/api/admin/overview'),
+          apiRequest(`/api/admin/users?${params}`)
+        ]);
+        if (requestSequence !== adminRequestSequence) return;
+        adminDashboard = { overview: overviewData.overview, users: usersData.users };
+        renderAdminOverview();
+        renderAdminUsers();
+      } catch (error) {
+        if (requestSequence !== adminRequestSequence) return;
+        adminMetrics.setAttribute('aria-busy', 'false');
+        adminUpdatedAt.textContent = '更新失败';
+        adminSummaryFoot.textContent = `数据更新失败：${error.message}`;
+        adminUserCount.textContent = '读取失败';
+        adminUserList.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}<div class="action-row" style="justify-content:center;"><button class="mini-btn primary" data-admin-retry>重新加载</button></div></div>`;
+        if (error.status === 401 || error.status === 403) {
+          adminDashboard = { overview: null, users: [] };
+          adminUserList.innerHTML = '<div class="empty-state">管理员登录状态已失效，用户信息已清除。</div>';
+          showToast('管理员登录状态已失效');
+          await hydrateFromServer().catch(() => {});
+          switchTab('profile');
+        }
+      } finally {
+        if (requestSequence === adminRequestSequence) {
+          adminLoading = false;
+          adminRefresh.disabled = false;
+          adminMetrics.setAttribute('aria-busy', 'false');
+        }
+      }
+    }
+
+    async function manageUser(button) {
+      const action = button.dataset.adminAction;
+      const userId = button.dataset.userId;
+      const actionLabels = { disable: '停用账号', enable: '恢复账号', force_logout: '强制退出' };
+      const targetUser = adminDashboard.users.find((user) => user.id === userId);
+      const targetLabel = targetUser ? `“${targetUser.name}”（${targetUser.studentId}）` : '该用户';
+      const confirmation = action === 'disable'
+        ? `确定停用${targetLabel}吗？这会立即退出其全部会话，并禁止再次登录。`
+        : action === 'force_logout'
+          ? `确定强制退出${targetLabel}吗？账号不会被停用，之后仍可重新登录。`
+          : '';
+      if (confirmation && !window.confirm(confirmation)) return;
+      button.disabled = true;
+      try {
+        await apiRequest(`/api/admin/users/${encodeURIComponent(userId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ action })
+        });
+        showToast(`${actionLabels[action]}成功`);
+        await loadAdminDashboard({ quiet: true });
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        button.disabled = false;
+      }
     }
 
     let currentSort = 'new';
@@ -2546,7 +2874,9 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       const button = event.target.closest('[data-action]');
       if (!button) return;
       const action = button.dataset.action;
-      if (action === 'logout') {
+      if (action === 'open-admin') {
+        switchTab('admin');
+      } else if (action === 'logout') {
         try {
           await apiRequest('/api/auth/logout', { method: 'POST' });
           await hydrateFromServer();
@@ -2578,6 +2908,22 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           showToast(error.message);
         }
       }
+    });
+    adminBack.addEventListener('click', () => switchTab('profile'));
+    adminRefresh.addEventListener('click', () => loadAdminDashboard({ quiet: true }));
+    adminSearch.addEventListener('input', () => {
+      window.clearTimeout(adminSearchTimer);
+      adminSearchTimer = window.setTimeout(() => loadAdminDashboard(), 250);
+    });
+    adminStatusFilter.addEventListener('change', () => loadAdminDashboard());
+    adminUserList.addEventListener('click', (event) => {
+      const retry = event.target.closest('[data-admin-retry]');
+      if (retry) {
+        loadAdminDashboard();
+        return;
+      }
+      const button = event.target.closest('[data-admin-action]');
+      if (button) manageUser(button);
     });
     backToMessages.addEventListener('click', () => switchTab('messages'));
     document.getElementById('listBack').addEventListener('click', () => switchTab('home'));
@@ -2632,4 +2978,3 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   </script>
 </body>
 </html>
-

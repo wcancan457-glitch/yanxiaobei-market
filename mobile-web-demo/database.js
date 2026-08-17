@@ -72,10 +72,11 @@ function money(value) {
   return Number(value);
 }
 
-function publicUser(row, includeStudentId = false) {
+function publicUser(row, includeStudentId = false, includeRole = false) {
   if (!row) return null;
   const user = { id: String(row.id), name: row.name, campus: row.campus };
   if (includeStudentId) user.studentId = row.student_id;
+  if (includeRole) user.isAdmin = Boolean(row.is_admin);
   return user;
 }
 
@@ -144,7 +145,8 @@ async function healthcheck() {
 
 async function findUserByStudentId(studentId) {
   const result = await query(
-    'select id, student_id, name, campus, password_hash from users where student_id = $1',
+    `select id, student_id, name, campus, password_hash, is_admin, is_disabled
+     from users where student_id = $1`,
     [studentId]
   );
   return result.rows[0] || null;
@@ -153,18 +155,28 @@ async function findUserByStudentId(studentId) {
 async function createUser({ studentId, name, campus, passwordHash }) {
   try {
     const result = await query(
-      `insert into users (student_id, name, campus, password_hash)
-       values ($1, $2, $3, $4)
-       returning id, student_id, name, campus`,
+      `insert into users
+        (student_id, name, campus, password_hash, last_login_at, login_count)
+       values ($1, $2, $3, $4, now(), 1)
+       returning id, student_id, name, campus, is_admin`,
       [studentId, name, campus, passwordHash]
     );
-    return publicUser(result.rows[0], true);
+    return publicUser(result.rows[0], true, true);
   } catch (error) {
     if (error.code === '23505') {
       throw new AppError(409, '该学号已注册，请直接登录', 'student_id_exists');
     }
     throw error;
   }
+}
+
+async function recordLogin(userId) {
+  await query(
+    `update users
+     set last_login_at = now(), login_count = login_count + 1
+     where id = $1`,
+    [userId]
+  );
 }
 
 async function createSession({ tokenHash, userId, expiresAt }) {
@@ -181,17 +193,146 @@ async function createSession({ tokenHash, userId, expiresAt }) {
 async function getSessionUser(tokenHash) {
   if (!tokenHash) return null;
   const result = await query(
-    `select u.id, u.student_id, u.name, u.campus
-     from sessions s
-     join users u on u.id = s.user_id
-     where s.token_hash = $1 and s.expires_at > now()`,
+    `update sessions s
+     set last_seen_at = now()
+     from users u
+     where s.token_hash = $1
+       and s.user_id = u.id
+       and s.expires_at > now()
+       and not u.is_disabled
+     returning u.id, u.student_id, u.name, u.campus, u.is_admin`,
     [tokenHash]
   );
-  return result.rows[0] ? publicUser(result.rows[0], true) : null;
+  return result.rows[0] ? publicUser(result.rows[0], true, true) : null;
 }
 
 async function deleteSession(tokenHash) {
   if (tokenHash) await query('delete from sessions where token_hash = $1', [tokenHash]);
+}
+
+function adminUserFromRow(row) {
+  return {
+    id: String(row.id),
+    studentId: row.student_id,
+    name: row.name,
+    campus: row.campus,
+    isAdmin: Boolean(row.is_admin),
+    isDisabled: Boolean(row.is_disabled),
+    registeredAt: timestamp(row.created_at),
+    lastLoginAt: timestamp(row.last_login_at),
+    loginCount: Number(row.login_count || 0),
+    validSessions: Number(row.valid_sessions || 0),
+    activeSessions: Number(row.active_sessions || 0),
+    productCount: Number(row.product_count || 0),
+    taskCount: Number(row.task_count || 0)
+  };
+}
+
+async function getAdminOverview() {
+  const result = await query(`
+    select
+      (select count(*) from users) as total_users,
+      (select count(*) from users where not is_disabled) as enabled_users,
+      (select count(distinct user_id) from sessions where expires_at > now() and last_seen_at >= now() - interval '15 minutes') as active_users,
+      (select count(*) from sessions where expires_at > now()) as valid_sessions,
+      (select count(*) from sessions where expires_at > now() and last_seen_at >= now() - interval '15 minutes') as active_sessions,
+      (select count(*) from users where last_login_at >= now() - interval '24 hours') as logins_24h,
+      (select count(*) from users where created_at >= now() - interval '7 days') as new_users_7d,
+      (select count(*) from products) as total_products,
+      (select count(*) from tasks) as total_tasks
+  `);
+  const row = result.rows[0];
+  return {
+    totalUsers: Number(row.total_users),
+    enabledUsers: Number(row.enabled_users),
+    activeUsers: Number(row.active_users),
+    validSessions: Number(row.valid_sessions),
+    activeSessions: Number(row.active_sessions),
+    logins24h: Number(row.logins_24h),
+    newUsers7d: Number(row.new_users_7d),
+    totalProducts: Number(row.total_products),
+    totalTasks: Number(row.total_tasks)
+  };
+}
+
+async function getAdminUsers(search = '', status = 'all') {
+  const result = await query(
+    `with product_counts as (
+       select seller_id as user_id, count(*)::int as product_count
+       from products group by seller_id
+     ), task_counts as (
+       select publisher_id as user_id, count(*)::int as task_count
+       from tasks group by publisher_id
+     ), session_counts as (
+       select user_id,
+         count(*)::int as valid_sessions,
+         count(*) filter (where last_seen_at >= now() - interval '15 minutes')::int as active_sessions
+       from sessions where expires_at > now()
+       group by user_id
+     )
+     select u.id, u.student_id, u.name, u.campus, u.is_admin, u.is_disabled,
+       u.created_at, u.last_login_at, u.login_count,
+       coalesce(s.valid_sessions, 0) as valid_sessions,
+       coalesce(s.active_sessions, 0) as active_sessions,
+       coalesce(p.product_count, 0) as product_count,
+       coalesce(t.task_count, 0) as task_count
+     from users u
+     left join product_counts p on p.user_id = u.id
+     left join task_counts t on t.user_id = u.id
+     left join session_counts s on s.user_id = u.id
+     where ($1 = '' or u.student_id ilike '%' || $1 || '%' or u.name ilike '%' || $1 || '%')
+       and (
+         $2 = 'all'
+         or ($2 = 'active' and not u.is_disabled)
+         or ($2 = 'disabled' and u.is_disabled)
+         or ($2 = 'online' and coalesce(s.active_sessions, 0) > 0)
+       )
+     order by u.is_admin desc, u.created_at desc
+     limit 200`,
+    [String(search || '').trim().slice(0, 50), status]
+  );
+  return result.rows.map(adminUserFromRow);
+}
+
+async function manageAdminUser(adminId, targetUserId, action) {
+  if (!['disable', 'enable', 'force_logout'].includes(action)) {
+    throw new AppError(400, '不支持的用户管理操作');
+  }
+  return transaction(async (client) => {
+    const targetResult = await client.query(
+      `select id, student_id, is_admin, is_disabled
+       from users where id = $1 for update`,
+      [targetUserId]
+    );
+    const target = targetResult.rows[0];
+    if (!target) throw new AppError(404, '用户不存在');
+    if (target.is_admin || String(target.id) === String(adminId)) {
+      throw new AppError(400, '不能对管理员账号执行此操作');
+    }
+
+    if (action === 'disable') {
+      await client.query('update users set is_disabled = true where id = $1', [target.id]);
+    } else if (action === 'enable') {
+      await client.query('update users set is_disabled = false where id = $1', [target.id]);
+    }
+
+    let sessionsRevoked = 0;
+    if (action === 'disable' || action === 'force_logout') {
+      const sessions = await client.query('delete from sessions where user_id = $1', [target.id]);
+      sessionsRevoked = sessions.rowCount;
+    }
+    await client.query(
+      `insert into admin_audit_log (admin_id, target_user_id, action)
+       values ($1, $2, $3)`,
+      [adminId, target.id, action]
+    );
+    return {
+      id: String(target.id),
+      studentId: target.student_id,
+      isDisabled: action === 'disable' ? true : action === 'enable' ? false : target.is_disabled,
+      sessionsRevoked
+    };
+  });
 }
 
 async function getBootstrap(userId = null) {
@@ -503,9 +644,13 @@ module.exports = {
   publicUser,
   findUserByStudentId,
   createUser,
+  recordLogin,
   createSession,
   getSessionUser,
   deleteSession,
+  getAdminOverview,
+  getAdminUsers,
+  manageAdminUser,
   getBootstrap,
   createProduct,
   setProductAvailability,
