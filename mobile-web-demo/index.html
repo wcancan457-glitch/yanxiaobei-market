@@ -448,18 +448,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   font-size: 11px;
   font-weight: 600;
 }
-.seller-avatar {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: #E4EFFE;
-  color: var(--blue-deep);
-  font-size: 11px;
-  font-weight: 800;
-  flex: 0 0 auto;
-}
 .seller-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
 /* ===== 互助任务 ===== */
@@ -549,7 +537,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   font-size: 12px;
   line-height: 1.6;
 }
-.field input[aria-invalid="true"] { border-color: var(--red-pin); }
+.field input[aria-invalid="true"], .field textarea[aria-invalid="true"] { border-color: var(--red-pin); }
 
 .photo-upload {
   height: 112px;
@@ -589,6 +577,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 .primary-btn:active { transform: scale(0.98); }
+.primary-btn.danger { background: #C74337; box-shadow: 0 4px 12px rgba(199, 67, 55, 0.24); }
 .primary-btn:disabled { background: #D8D2C3; color: #8C9180; box-shadow: none; cursor: not-allowed; }
 
 .inline-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 12px; }
@@ -719,6 +708,13 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 }
 .verification-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .verification-actions .mini-btn { min-height: 44px; }
+.profile-name-form { display: grid; gap: 9px; margin-top: 12px; }
+.profile-name-form input {
+  width: 100%; min-width: 0; height: 44px; border: 1px solid var(--line);
+  border-radius: 12px; padding: 0 12px; background: #fff; color: var(--ink);
+}
+.profile-name-form input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(30, 111, 255, 0.12); outline: none; }
+.profile-name-form input[aria-invalid="true"] { border-color: var(--red-pin); }
 .verification-hint {
   margin: -1px 0 0;
   color: #486273;
@@ -928,6 +924,25 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 .admin-report-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
 .admin-report-actions { display: flex; flex-wrap: wrap; gap: 7px; }
 .admin-report-actions .mini-btn { min-height: 44px; }
+.admin-product-list { display: grid; gap: 10px; }
+.admin-product-card {
+  padding: 15px;
+  border-radius: 15px;
+  background: var(--card);
+  box-shadow: var(--shadow-1);
+  display: grid;
+  gap: 12px;
+}
+.admin-product-card.is-down { background: #F1EDE4; }
+.admin-product-main { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 11px; align-items: center; }
+.admin-product-thumb { width: 58px; height: 58px; border-radius: 13px; overflow: hidden; display: grid; place-items: center; color: #fff; font-weight: 800; }
+.admin-product-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.admin-product-copy { min-width: 0; display: grid; gap: 5px; }
+.admin-product-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.admin-product-copy span { color: var(--muted); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.admin-product-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-product-actions .mini-btn { min-height: 44px; }
+.admin-moderation-note { margin: 0; padding: 10px 11px; border-radius: 12px; background: #F3EEE2; color: var(--ink-2); font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
 .admin-entry {
   background: var(--blue-deep);
   color: #fff;
@@ -1105,8 +1120,17 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 .avatar-btn img { width: 150%; height: 150%; object-fit: cover; object-position: 10% 26%; transform: translate(-18px, -16px); display: block; }
-.profile-name { display: grid; gap: 5px; }
-.profile-name strong { font-size: 23px; line-height: 1.1; font-weight: 800; }
+.profile-name { display: grid; gap: 5px; min-width: 0; }
+.profile-name strong {
+  font-size: 23px;
+  line-height: 1.1;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
 .profile-name span { color: rgba(255, 255, 255, 0.84); font-size: 13px; line-height: 1.4; }
 
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 16px; }
@@ -1643,6 +1667,26 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
               <div class="empty-state">进入后台后加载用户信息。</div>
             </div>
           </section>
+          <section class="admin-user-section" aria-labelledby="adminProductsTitle">
+            <div class="admin-section-title">
+              <h2 id="adminProductsTitle">商品管理</h2>
+              <span id="adminProductCount">—</span>
+            </div>
+            <div class="admin-toolbar">
+              <input id="adminProductSearch" type="search" placeholder="搜索商品、卖家昵称或学号" aria-label="搜索商品">
+              <select id="adminProductStatus" aria-label="筛选商品状态">
+                <option value="all">全部状态</option>
+                <option value="active">正在展示</option>
+                <option value="available">在售</option>
+                <option value="trading">交易中</option>
+                <option value="sold">已售</option>
+                <option value="down">全部下架</option>
+              </select>
+            </div>
+            <div class="admin-product-list" id="adminProductList" aria-live="polite">
+              <div class="empty-state">进入后台后加载商品信息。</div>
+            </div>
+          </section>
           <section class="admin-user-section" aria-labelledby="adminReportsTitle">
             <div class="admin-section-title">
               <h2 id="adminReportsTitle">举报处理</h2>
@@ -1741,6 +1785,12 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             aria-describedby="studentIdHint">
           <p class="field-hint" id="studentIdHint">本科生输入纯数字学号；硕士生输入 S+9位数字；博士生输入 B+9位数字。</p>
         </div>
+        <div class="field" id="nicknameField" hidden>
+          <label for="registerNickname">公开昵称</label>
+          <input id="registerNickname" type="text" maxlength="20" autocomplete="nickname"
+            placeholder="例如：小北、螃蟹同学" aria-describedby="nicknameHint">
+          <p class="field-hint" id="nicknameHint">昵称会展示在商品、任务和聊天中，注册后仍可在“我的”页面修改。</p>
+        </div>
         <div class="field">
           <label for="studentPassword" id="studentPasswordLabel">密码</label>
           <input id="studentPassword" type="password" value="" autocomplete="current-password">
@@ -1797,10 +1847,30 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     </section>
   </div>
 
+  <div class="sheet-mask login-mask" id="adminProductMask" aria-hidden="true">
+    <section class="login-dialog" role="dialog" aria-modal="true" aria-labelledby="adminProductActionTitle">
+      <h2 id="adminProductActionTitle">处理商品</h2>
+      <p id="adminProductActionDescription">请确认处理范围并填写原因。</p>
+      <div class="report-target" id="adminProductTargetText">商品</div>
+      <div class="form-panel" style="padding: 0; border: 0; box-shadow: none;">
+        <div class="field">
+          <label for="adminProductReason">处理原因</label>
+          <textarea id="adminProductReason" maxlength="300" placeholder="请填写审核依据或违规情况，4-300个字符。" aria-describedby="adminProductReasonHint"></textarea>
+          <p class="field-hint" id="adminProductReasonHint">原因会写入管理员审计记录，并通过站内通知告知发布者。</p>
+        </div>
+      </div>
+      <div class="login-actions">
+        <button class="secondary-btn" id="cancelAdminProductAction" type="button">取消</button>
+        <button class="primary-btn danger" id="confirmAdminProductAction" type="button">确认下架</button>
+      </div>
+    </section>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite">已发送</div>
 
   <script src="student-id.js"></script>
   <script src="school-email.js"></script>
+  <script src="nickname.js"></script>
   <script>
     const {
       FORMAT_MESSAGE: STUDENT_ID_FORMAT_MESSAGE,
@@ -1813,6 +1883,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       normalizeSchoolEmail,
       validSchoolEmail
     } = window.YanxiaobeiSchoolEmail;
+    const {
+      FORMAT_MESSAGE: NICKNAME_FORMAT_MESSAGE,
+      normalizeNickname,
+      validNickname
+    } = window.YanxiaobeiNickname;
     const STORAGE_KEY = 'yanxiaobei-campus-market-mvp-v1';
     const MESSAGE_OUTBOX_KEY = 'yanxiaobei-message-outbox-v1';
     const EMPTY_MESSAGE_CURSOR = '1970-01-01T00:00:00.000000Z|';
@@ -1837,6 +1912,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const adminStatusFilter = document.getElementById('adminStatusFilter');
     const adminUserCount = document.getElementById('adminUserCount');
     const adminUserList = document.getElementById('adminUserList');
+    const adminProductSearch = document.getElementById('adminProductSearch');
+    const adminProductStatus = document.getElementById('adminProductStatus');
+    const adminProductCount = document.getElementById('adminProductCount');
+    const adminProductList = document.getElementById('adminProductList');
     const adminReportStatus = document.getElementById('adminReportStatus');
     const adminReportCount = document.getElementById('adminReportCount');
     const adminReportList = document.getElementById('adminReportList');
@@ -1874,6 +1953,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const switchLoginMode = document.getElementById('switchLoginMode');
     const forgotPasswordButton = document.getElementById('forgotPasswordButton');
     const studentIdInput = document.getElementById('studentId');
+    const nicknameField = document.getElementById('nicknameField');
+    const registerNickname = document.getElementById('registerNickname');
     const studentPassword = document.getElementById('studentPassword');
     const studentPasswordLabel = document.getElementById('studentPasswordLabel');
     const schoolEmailField = document.getElementById('schoolEmailField');
@@ -1886,6 +1967,13 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const reportDescription = document.getElementById('reportDescription');
     const cancelReport = document.getElementById('cancelReport');
     const submitReport = document.getElementById('submitReport');
+    const adminProductMask = document.getElementById('adminProductMask');
+    const adminProductActionTitle = document.getElementById('adminProductActionTitle');
+    const adminProductActionDescription = document.getElementById('adminProductActionDescription');
+    const adminProductTargetText = document.getElementById('adminProductTargetText');
+    const adminProductReason = document.getElementById('adminProductReason');
+    const cancelAdminProductAction = document.getElementById('cancelAdminProductAction');
+    const confirmAdminProductAction = document.getElementById('confirmAdminProductAction');
     const profileName = document.getElementById('profileName');
     const profileMeta = document.getElementById('profileMeta');
     const profileLoginPill = document.getElementById('profileLoginPill');
@@ -1902,6 +1990,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     let activeProductId = null;
     let activeChat = null;
     let activeReportTarget = null;
+    let activeAdminProductAction = null;
     let currentFilter = 'all';
     let currentCategory = 'all';
     let currentModule = 'products';
@@ -1911,7 +2000,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     let loginMode = 'login';
     let publishing = false;
     let publishRequestKey = '';
-    let adminDashboard = { overview: null, users: [], reports: [] };
+    let adminDashboard = { overview: null, users: [], products: [], reports: [] };
     let adminLoading = false;
     let adminRequestSequence = 0;
     let adminSearchTimer = null;
@@ -2460,8 +2549,12 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       source.addEventListener('message_available', () => {
         if (messageEventSource === source) syncNewMessages();
       });
-      source.addEventListener('visibility_changed', () => {
-        if (messageEventSource === source) hydrateFromServer({ invalidateMessageSync: true, silent: true });
+      source.addEventListener('visibility_changed', async () => {
+        if (messageEventSource !== source) return;
+        await hydrateFromServer({ invalidateMessageSync: true, silent: true });
+        if (document.getElementById('admin').classList.contains('active') && currentUser()?.isAdmin) {
+          loadAdminDashboard({ quiet: true });
+        }
       });
       source.addEventListener('session_expired', () => {
         if (messageEventSource === source) handleMessageSessionExpired();
@@ -2489,9 +2582,14 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         const remote = await apiRequest('/api/bootstrap', { signal: controller.signal });
         if (requestSequence !== bootstrapRequestSequence) return false;
         if (remote && Array.isArray(remote.products)) {
-          const previousUserId = currentUser()?.id || '';
+          const previousUser = currentUser();
+          const previousUserId = previousUser?.id || '';
           const currentUserId = remote.currentUser?.id || '';
           if (previousUserId && previousUserId !== currentUserId) clearMessageOutboxForUser(previousUserId);
+          if (previousUser?.isAdmin && previousUserId !== currentUserId) {
+            adminRequestSequence += 1;
+            resetAdminPrivateView('管理员已退出，后台数据已从当前页面清除。');
+          }
           state = { ...structuredClone(seedState), ...remote, currentUserId };
           if (remote.currentUser) state.users[currentUserId] = remote.currentUser;
           restoreMessageOutboxForCurrentUser();
@@ -2713,7 +2811,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         },
         register: {
           title: '注册学号账号',
-          description: '注册后需要通过 @emails.bjut.edu.cn 学生邮箱验证码或管理员人工核验，才能发布和接单。',
+          description: '设置公开昵称并注册账号；完成学生邮箱验证码或管理员人工核验后，才能发布和接单。',
           confirm: '注册并登录',
           switch: '已有账号？返回登录'
         },
@@ -2734,6 +2832,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       loginDescription.textContent = copy.description;
       confirmLogin.textContent = copy.confirm;
       switchLoginMode.textContent = copy.switch;
+      nicknameField.hidden = mode !== 'register';
       schoolEmailField.hidden = !['register', 'forgot', 'reset'].includes(mode);
       authCodeField.hidden = mode !== 'reset';
       passwordField.hidden = mode === 'forgot';
@@ -2787,8 +2886,84 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 
     function closeReportDialog() {
       activeReportTarget = null;
+      reportTargetText.textContent = '';
+      reportReason.value = '';
+      reportDescription.value = '';
       reportMask.classList.remove('open');
       reportMask.setAttribute('aria-hidden', 'true');
+    }
+
+    function openAdminProductDialog(product, action) {
+      activeAdminProductAction = { productId: product.id, action };
+      const copy = {
+        down: {
+          title: '违规下架商品',
+          description: '商品会立即从公开列表移除；卖家不能自行恢复或删除。正在进行的咨询和交易会关闭，商品记录与审计证据会保留。',
+          confirm: '确认违规下架'
+        },
+        restore: {
+          title: '解除平台处置',
+          description: '解除管理员下架状态；如果卖家此前已自行下架，商品仍保持卖家下架。此前关闭的购买意向不会自动恢复。',
+          confirm: '确认解除处置'
+        },
+        delete: {
+          title: '永久删除商品',
+          description: '商品、购买意向和相关聊天记录会被永久删除，无法恢复。管理员审计记录仍会保留。',
+          confirm: '永久删除'
+        }
+      }[action];
+      adminProductActionTitle.textContent = copy.title;
+      adminProductActionDescription.textContent = copy.description;
+      adminProductTargetText.textContent = `${product.title} · ${product.sellerName || '未命名用户'}`;
+      adminProductReason.value = '';
+      adminProductReason.setAttribute('aria-invalid', 'false');
+      confirmAdminProductAction.textContent = copy.confirm;
+      confirmAdminProductAction.classList.toggle('danger', action !== 'restore');
+      adminProductMask.classList.add('open');
+      adminProductMask.setAttribute('aria-hidden', 'false');
+      window.setTimeout(() => adminProductReason.focus(), 0);
+    }
+
+    function closeAdminProductDialog() {
+      activeAdminProductAction = null;
+      adminProductActionTitle.textContent = '处理商品';
+      adminProductActionDescription.textContent = '请确认处理范围并填写原因。';
+      adminProductTargetText.textContent = '';
+      adminProductReason.value = '';
+      adminProductReason.setAttribute('aria-invalid', 'false');
+      confirmAdminProductAction.textContent = '确认处理';
+      confirmAdminProductAction.classList.remove('danger');
+      adminProductMask.classList.remove('open');
+      adminProductMask.setAttribute('aria-hidden', 'true');
+    }
+
+    async function submitAdminProductAction() {
+      if (!activeAdminProductAction) return;
+      const reason = adminProductReason.value.trim().replace(/\s+/g, ' ');
+      const length = Array.from(reason).length;
+      if (length < 4 || length > 300) {
+        adminProductReason.setAttribute('aria-invalid', 'true');
+        showToast('请填写4-300个字符的处理原因');
+        return;
+      }
+      const { productId, action } = activeAdminProductAction;
+      confirmAdminProductAction.disabled = true;
+      try {
+        await apiRequest(`/api/admin/products/${encodeURIComponent(productId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ action, reason })
+        });
+        closeAdminProductDialog();
+        await Promise.all([
+          loadAdminDashboard({ quiet: true }),
+          hydrateFromServer({ invalidateMessageSync: true, silent: true })
+        ]);
+        showToast(action === 'down' ? '商品已被平台下架' : action === 'restore' ? '平台处置已解除' : '商品已永久删除');
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        confirmAdminProductAction.disabled = false;
+      }
     }
 
     function productCardHtml(product) {
@@ -2796,7 +2971,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       const mine = currentUser()?.id === product.sellerId;
       const label = mine ? '我的' : locked ? '暂不可咨询' : '我想要';
       const buttonClass = locked ? 'want locked' : 'want';
-      const sellerInitial = (product.sellerName || '同学').slice(0, 1);
       const safeImage = safeProductImageSource(product.image);
       const imageHtml = safeImage
         ? `<div class="product-img uploaded"><img src="${escapeAttribute(safeImage)}" alt="${escapeAttribute(product.title)}"></div>`
@@ -2808,7 +2982,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             <h3 class="product-title">${escapeHtml(product.title)}</h3>
             <p class="product-desc">${escapeHtml(product.desc)}</p>
             <div class="seller-row">
-              <span class="seller-avatar">${escapeHtml(sellerInitial)}</span>
               <span class="seller-name">${escapeHtml(product.sellerName || '校园同学')}</span>
               <span>·</span>
               <span>${product.campus === 'pingleyuan' ? '平乐园' : '中蓝'}</span>
@@ -2887,8 +3060,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             </div>
             <p class="product-desc" style="display:block; margin-bottom:8px;">${escapeHtml(task.desc)}</p>
             <div class="seller-row" style="margin-bottom:8px;">
-              <span class="seller-avatar">互</span>
-              <span class="seller-name">校园互助</span>
+              <span class="seller-name">${escapeHtml(state.users[task.publisherId]?.name || '校园互助发布者')}</span>
               <span>·</span>
               <span>${escapeHtml(task.campusText)}</span>
             </div>
@@ -2945,7 +3117,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       const ensure = (product, peerId, intent = null) => {
         if (!product || !peerId || peerId === user.id) return;
         const key = `${product.id}:${peerId}`;
-        const peer = state.users[peerId] || { id: peerId, name: `同学${String(peerId).slice(-4)}`, campus: '校内用户' };
+        const peer = state.users[peerId] || { id: peerId, name: '已隐藏用户', campus: '校内用户' };
         const messages = state.chats
           .filter((message) =>
             message.productId === product.id &&
@@ -3112,15 +3284,20 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         <div class="my-product-row">
           <div class="my-product-info">
             <strong>${escapeHtml(item.title)}</strong>
-            <span class="status-badge ${item.status === 'available' ? 'done' : item.status === 'trading' ? 'warn' : 'closed'}">${statusText(item.status)}</span>
+            <span class="status-badge ${item.status === 'available' ? 'done' : item.status === 'trading' ? 'warn' : 'closed'}">${item.moderationStatus === 'down' ? '平台下架' : statusText(item.status)}</span>
+            ${item.moderationStatus === 'down'
+              ? `<span class="verification-hint">处理原因：${escapeHtml(item.moderationReason || '违反平台商品规则')}</span>`
+              : ''}
           </div>
           <div class="my-product-actions">
-            ${item.status === 'available'
+            ${item.moderationStatus === 'down'
+              ? '<span class="status-badge closed">仅管理员可恢复或删除</span>'
+              : item.status === 'available'
               ? `<button class="mini-btn" data-action="down" data-id="${item.id}">下架</button>`
               : item.status === 'down'
                 ? `<button class="mini-btn primary" data-action="up" data-id="${item.id}">上架</button>`
                 : ''}
-            <button class="mini-btn danger" data-action="del" data-id="${item.id}">删除</button>
+            ${item.moderationStatus === 'down' ? '' : `<button class="mini-btn danger" data-action="del" data-id="${item.id}">删除</button>`}
           </div>
         </div>
       `).join('') : '<p class="empty-state" style="margin-top:8px;">还没有发布过商品，去首页点发布吧。</p>';
@@ -3201,6 +3378,17 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             </div>`).join('')
         : '<p class="empty-state" style="margin-top:8px;">暂无已屏蔽用户。</p>';
       profileList.innerHTML = `
+        <article class="profile-card">
+          <h3>公开昵称</h3>
+          <p>其他同学只会看到昵称，不会看到你的学号或校内邮箱。</p>
+          <div class="profile-name-form">
+            <div class="verification-actions">
+              <input id="profileNickname" type="text" maxlength="20" value="${escapeAttribute(user.name)}" aria-label="公开昵称">
+              <button class="mini-btn primary" data-action="save-nickname">保存昵称</button>
+            </div>
+            <span class="verification-hint">2-20个字符；修改后会同步到商品、任务和聊天。</span>
+          </div>
+        </article>
         ${verificationHtml}
         ${user.isAdmin ? `
           <article class="profile-card admin-entry">
@@ -3302,6 +3490,68 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       `).join('');
     }
 
+    function resetAdminPrivateView(message = '管理员登录状态已失效，数据已清除。') {
+      adminDashboard = { overview: null, users: [], products: [], reports: [] };
+      adminMetrics.innerHTML = `
+        <div class="admin-metric"><strong>—</strong><span>注册用户</span></div>
+        <div class="admin-metric"><strong>—</strong><span>近 15 分钟活跃</span></div>
+        <div class="admin-metric"><strong>—</strong><span>24 小时登录</span></div>
+        <div class="admin-metric"><strong>—</strong><span>近 7 天新增</span></div>
+      `;
+      adminMetrics.setAttribute('aria-busy', 'false');
+      adminUpdatedAt.textContent = '登录已失效';
+      adminSummaryFoot.textContent = message;
+      adminSearch.value = '';
+      adminStatusFilter.value = 'all';
+      adminProductSearch.value = '';
+      adminProductStatus.value = 'all';
+      adminReportStatus.value = 'pending';
+      adminUserCount.textContent = '—';
+      adminProductCount.textContent = '—';
+      adminReportCount.textContent = '—';
+      adminUserList.innerHTML = '<div class="empty-state">管理员登录状态已失效，用户信息已清除。</div>';
+      adminProductList.innerHTML = '<div class="empty-state">管理员登录状态已失效，商品信息已清除。</div>';
+      adminReportList.innerHTML = '<div class="empty-state">管理员登录状态已失效，举报信息已清除。</div>';
+      closeAdminProductDialog();
+      closeReportDialog();
+    }
+
+    function renderAdminProducts() {
+      const products = adminDashboard.products || [];
+      adminProductCount.textContent = `显示 ${products.length} 件`;
+      if (!products.length) {
+        adminProductList.innerHTML = '<div class="empty-state">没有符合当前条件的商品。</div>';
+        return;
+      }
+      adminProductList.innerHTML = products.map((product) => `
+        <article class="admin-product-card ${product.status === 'down' ? 'is-down' : ''}">
+          <div class="admin-product-main">
+            ${productThumb(product, 'admin-product-thumb')}
+            <div class="admin-product-copy">
+              <div class="admin-user-head">
+                <strong>${escapeHtml(product.title)}</strong>
+                <span class="status-badge ${product.status === 'available' ? 'done' : product.status === 'trading' ? 'warn' : 'closed'}">${escapeHtml(product.moderationStatus === 'down' ? '平台下架' : product.businessStatus === 'down' ? '卖家下架' : statusText(product.status))}</span>
+              </div>
+              <span>卖家：${escapeHtml(product.sellerName || '未命名用户')} · ${escapeHtml(product.sellerStudentId || '')}</span>
+              <span>¥${escapeHtml(product.price)} · ${escapeHtml(product.campusText)} · ${escapeHtml(formatAdminDate(product.createdAt, '未知时间'))}</span>
+              <span>活跃购买意向 ${product.activeIntentCount} 个 · 会话消息 ${product.messageCount} 条</span>
+            </div>
+          </div>
+          ${product.lastModerationReason
+            ? `<p class="admin-moderation-note">最近处理：${escapeHtml(product.lastModerationReason)} · ${escapeHtml(formatAdminDate(product.lastModeratedAt, ''))}</p>`
+            : ''}
+          <div class="admin-product-actions">
+            ${product.moderationStatus === 'down'
+              ? `<button class="mini-btn primary" data-admin-product-action="restore" data-product-id="${escapeAttribute(product.id)}">解除平台处置</button>`
+              : product.businessStatus === 'sold'
+                ? ''
+                : `<button class="mini-btn" data-admin-product-action="down" data-product-id="${escapeAttribute(product.id)}">违规下架</button>`}
+            <button class="mini-btn danger" data-admin-product-action="delete" data-product-id="${escapeAttribute(product.id)}">永久删除</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
     function reportReasonText(reason) {
       return {
         spam: '重复或垃圾信息',
@@ -3348,22 +3598,34 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       adminMetrics.setAttribute('aria-busy', 'true');
       if (!options.quiet) {
         adminUserList.innerHTML = '<div class="empty-state">正在安全读取用户信息…</div>';
+        adminProductList.innerHTML = '<div class="empty-state">正在读取商品信息…</div>';
         adminReportList.innerHTML = '<div class="empty-state">正在读取举报工单…</div>';
       }
       const params = new URLSearchParams({
         query: adminSearch.value.trim(),
         status: adminStatusFilter.value
       });
+      const productParams = new URLSearchParams({
+        query: adminProductSearch.value.trim(),
+        status: adminProductStatus.value
+      });
       try {
-        const [overviewData, usersData, reportsData] = await Promise.all([
+        const [overviewData, usersData, productsData, reportsData] = await Promise.all([
           apiRequest('/api/admin/overview'),
           apiRequest(`/api/admin/users?${params}`),
+          apiRequest(`/api/admin/products?${productParams}`),
           apiRequest(`/api/admin/reports?status=${encodeURIComponent(adminReportStatus.value)}`)
         ]);
         if (requestSequence !== adminRequestSequence) return;
-        adminDashboard = { overview: overviewData.overview, users: usersData.users, reports: reportsData.reports };
+        adminDashboard = {
+          overview: overviewData.overview,
+          users: usersData.users,
+          products: productsData.products,
+          reports: reportsData.reports
+        };
         renderAdminOverview();
         renderAdminUsers();
+        renderAdminProducts();
         renderAdminReports();
       } catch (error) {
         if (requestSequence !== adminRequestSequence) return;
@@ -3372,11 +3634,12 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         adminSummaryFoot.textContent = `数据更新失败：${error.message}`;
         adminUserCount.textContent = '读取失败';
         adminUserList.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}<div class="action-row" style="justify-content:center;"><button class="mini-btn primary" data-admin-retry>重新加载</button></div></div>`;
+        adminProductCount.textContent = '读取失败';
+        adminProductList.innerHTML = '<div class="empty-state">商品信息读取失败。</div>';
         adminReportCount.textContent = '读取失败';
         adminReportList.innerHTML = '<div class="empty-state">举报工单读取失败。</div>';
         if (error.status === 401 || error.status === 403) {
-          adminDashboard = { overview: null, users: [], reports: [] };
-          adminUserList.innerHTML = '<div class="empty-state">管理员登录状态已失效，用户信息已清除。</div>';
+          resetAdminPrivateView();
           showToast('管理员登录状态已失效');
           await hydrateFromServer().catch(() => {});
           switchTab('profile');
@@ -3918,6 +4181,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       state.taskApplications = [];
       state.notifications = [];
       state.blocks = [];
+      adminRequestSequence += 1;
+      resetAdminPrivateView();
       if (previousUserId && state.users[previousUserId]) {
         const previous = state.users[previousUserId];
         state.users[previousUserId] = { id: previous.id, name: previous.name, campus: previous.campus };
@@ -3926,6 +4191,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       saveState();
       renderAll();
       if (document.getElementById('chat').classList.contains('active')) switchTab('messages');
+      if (document.getElementById('admin').classList.contains('active')) switchTab('profile');
       showToast('登录已失效，请重新登录');
       await hydrateFromServer();
       handlingSessionExpired = false;
@@ -4111,12 +4377,18 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       schoolEmailInput.setAttribute('aria-invalid', 'false');
     });
 
+    registerNickname.addEventListener('input', () => {
+      registerNickname.setAttribute('aria-invalid', 'false');
+    });
+
     confirmLogin.addEventListener('click', async () => {
       const id = normalizeStudentId(studentIdInput.value);
       studentIdInput.value = id;
       const password = studentPassword.value;
       const email = normalizeSchoolEmail(schoolEmailInput.value);
       const code = authCodeInput.value.trim();
+      const rawDisplayName = registerNickname.value;
+      const displayName = normalizeNickname(rawDisplayName);
       if (!id) {
         showToast('请输入学号');
         return;
@@ -4128,6 +4400,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       }
       if (!password && loginMode !== 'forgot') {
         showToast('请输入密码');
+        return;
+      }
+      if (loginMode === 'register' && !validNickname(rawDisplayName)) {
+        registerNickname.setAttribute('aria-invalid', 'true');
+        showToast(NICKNAME_FORMAT_MESSAGE);
         return;
       }
       if (['forgot', 'reset'].includes(loginMode) && !email) {
@@ -4169,7 +4446,12 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           const endpoint = loginMode === 'register' ? '/api/auth/register' : '/api/auth/login';
           const result = await apiRequest(endpoint, {
             method: 'POST',
-            body: JSON.stringify({ studentId: id, password, schoolEmail: loginMode === 'register' ? email : undefined })
+            body: JSON.stringify({
+              studentId: id,
+              password,
+              name: loginMode === 'register' ? displayName : undefined,
+              schoolEmail: loginMode === 'register' ? email : undefined
+            })
           });
           const completedMode = loginMode;
           await hydrateFromServer();
@@ -4179,6 +4461,9 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             if (result.verificationSent) startVerificationCooldown(60);
             switchTab('profile');
             showToast(result.verificationSent ? '注册成功，验证码已发送到校内邮箱' : '注册成功，请完成校园身份认证');
+          } else if (/^同学\d{4}$/.test(currentUser()?.name || '')) {
+            switchTab('profile');
+            showToast('请先把旧版系统昵称修改为你的公开昵称');
           } else {
             showToast(currentUser()?.isVerified ? '登录成功' : '登录成功，请先完成校园身份认证');
           }
@@ -4237,6 +4522,28 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           showToast('已退出登录');
         } catch (error) {
           showToast(error.message);
+        }
+      } else if (action === 'save-nickname') {
+        const input = document.getElementById('profileNickname');
+        const rawDisplayName = input?.value || '';
+        const displayName = normalizeNickname(rawDisplayName);
+        if (!validNickname(rawDisplayName)) {
+          input?.setAttribute('aria-invalid', 'true');
+          showToast(NICKNAME_FORMAT_MESSAGE);
+          return;
+        }
+        button.disabled = true;
+        try {
+          await apiRequest('/api/profile', {
+            method: 'PATCH',
+            body: JSON.stringify({ name: displayName })
+          });
+          await hydrateFromServer({ invalidateMessageSync: true, silent: true });
+          showToast('昵称已更新');
+        } catch (error) {
+          showToast(error.message);
+        } finally {
+          button.disabled = false;
         }
       } else if (action === 'task-cancel' || action === 'task-done' || action === 'task-withdraw') {
         const task = state.tasks.find((item) => item.id === button.dataset.id);
@@ -4341,6 +4648,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       adminSearchTimer = window.setTimeout(() => loadAdminDashboard(), 250);
     });
     adminStatusFilter.addEventListener('change', () => loadAdminDashboard());
+    adminProductSearch.addEventListener('input', () => {
+      window.clearTimeout(adminSearchTimer);
+      adminSearchTimer = window.setTimeout(() => loadAdminDashboard(), 250);
+    });
+    adminProductStatus.addEventListener('change', () => loadAdminDashboard());
     adminReportStatus.addEventListener('change', () => loadAdminDashboard({ quiet: true }));
     adminUserList.addEventListener('click', (event) => {
       const retry = event.target.closest('[data-admin-retry]');
@@ -4351,6 +4663,17 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       const button = event.target.closest('[data-admin-action]');
       if (button) manageUser(button);
     });
+    adminProductList.addEventListener('click', (event) => {
+      const retry = event.target.closest('[data-admin-retry]');
+      if (retry) {
+        loadAdminDashboard();
+        return;
+      }
+      const button = event.target.closest('[data-admin-product-action]');
+      if (!button) return;
+      const product = adminDashboard.products.find((item) => item.id === button.dataset.productId);
+      if (product) openAdminProductDialog(product, button.dataset.adminProductAction);
+    });
     adminReportList.addEventListener('click', (event) => {
       const retry = event.target.closest('[data-admin-retry]');
       if (retry) {
@@ -4359,6 +4682,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       }
       const button = event.target.closest('[data-report-action]');
       if (button) manageReport(button);
+    });
+    cancelAdminProductAction.addEventListener('click', closeAdminProductDialog);
+    confirmAdminProductAction.addEventListener('click', submitAdminProductAction);
+    adminProductMask.addEventListener('click', (event) => {
+      if (event.target === adminProductMask) closeAdminProductDialog();
     });
     backToMessages.addEventListener('click', () => switchTab('messages'));
     document.getElementById('listBack').addEventListener('click', () => switchTab('home'));

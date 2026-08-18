@@ -39,7 +39,7 @@ function collectUsers(auth, state) {
     const existing = users.get(id) || {};
     users.set(id, {
       studentId: id,
-      name: source.name || existing.name || `同学${id.slice(-4)}`,
+      name: source.name || existing.name || '校园用户',
       campus: source.campus || existing.campus || '平乐园校区',
       passwordHash: source.passwordHash || existing.passwordHash || '!disabled'
     });

@@ -31,7 +31,7 @@ GitHub Actions 需要以下 Secrets：
 ## 自动部署会执行的动作
 
 1. 安装 Node 依赖并运行代码检查；已配置 SMTP 时，在执行迁移与替换线上版本前验证 SMTP 连接和认证，验证失败则终止部署。
-2. 使用 `MIGRATION_DATABASE_URL` 按文件名顺序执行尚未应用的迁移。`008_identity_notifications_and_moderation.sql` 增加校内邮箱认证令牌、任务申请、通知、屏蔽和举报数据结构，并只把上线前明确的三个初始账号标记为 `legacy` 认证；`009_least_privilege_app_role.sql` 创建受限应用角色、授权和 RLS policies；`010_student_email_domain.sql` 把学生邮箱后缀修正为 `@emails.bjut.edu.cn`，保留旧 `@bjut.edu.cn` 绑定的邮箱名前缀，并要求通过邮件方式认证的账号重新验证，同时清除旧地址对应的验证码与冷却记录；`011_realtime_messages.sql` 为消息增加 `request_id`、发送者范围的幂等唯一索引，以及按收发方、创建时间和消息 ID 排序的增量查询索引。
+2. 使用 `MIGRATION_DATABASE_URL` 按文件名顺序执行尚未应用的迁移。`008_identity_notifications_and_moderation.sql` 增加校内邮箱认证令牌、任务申请、通知、屏蔽和举报数据结构，并只把上线前明确的三个初始账号标记为 `legacy` 认证；`009_least_privilege_app_role.sql` 创建受限应用角色、授权和 RLS policies；`010_student_email_domain.sql` 把学生邮箱后缀修正为 `@emails.bjut.edu.cn`，保留旧 `@bjut.edu.cn` 绑定的邮箱名前缀，并要求通过邮件方式认证的账号重新验证，同时清除旧地址对应的验证码与冷却记录；`011_realtime_messages.sql` 为消息增加 `request_id`、发送者范围的幂等唯一索引，以及按收发方、创建时间和消息 ID 排序的增量查询索引；`012_admin_product_moderation.sql` 为商品增加独立的 `moderation_status`、处置原因与处置人/时间，并创建永久保留的 `admin_content_audit_log` 管理员内容审计表。
 3. 首次部署前复制 `auth.json`、`db.json` 到 `data/backups/pre-postgres-*`。
 4. 把 JSON 用户、商品、任务、意向和聊天迁移到 PostgreSQL。
 5. 创建 `data/.postgres-migrated` 标记，防止旧 JSON 在后续部署中覆盖数据库。
@@ -41,8 +41,9 @@ GitHub Actions 需要以下 Secrets：
 ## 最小权限数据库角色
 
 - `MIGRATION_DATABASE_URL` 使用数据库 owner，限 GitHub 部署迁移、首次 JSON 导入和加密备份；`APP_DATABASE_URL` 使用 `yanxiaobei_app`，限 Node.js 运行时。两者必须使用不同角色和不同密码。
-- `yanxiaobei_app` 仅获得业务表的 `SELECT/INSERT/UPDATE/DELETE` 与必要 sequence 权限（DML-only），没有建表、建 schema、数据库管理或读取 `schema_migrations` 的权限。
+- `yanxiaobei_app` 仅获得业务表必需的 DML 权限与必要 sequence 权限，没有建表、建 schema、数据库管理或读取 `schema_migrations` 的权限。管理员内容审计表是收窄的例外：`admin_content_audit_log` 只授予 `SELECT` 与 `INSERT`，不授予 `UPDATE` 或 `DELETE`。
 - 迁移 009 为启用 RLS 的业务表创建仅授予 `yanxiaobei_app` 的 policies。浏览器不直连数据库，用户级鉴权、认证、屏蔽和管理员授权仍由 Node API 执行；不要把应用角色 URI 暴露到前端。
+- 迁移 012 为审计表分别创建运行角色专用的读取和新增 RLS policy；平台下架、解除处置和永久删除都追加审计记录，运行时角色不能覆盖或删除既有记录。
 
 ## 数据查看
 

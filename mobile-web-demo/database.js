@@ -91,6 +91,7 @@ function publicUser(row, includeStudentId = false, includeRole = false) {
 }
 
 function productFromRow(row) {
+  const moderationStatus = row.moderation_status || 'clear';
   return {
     id: row.id,
     title: row.title,
@@ -101,7 +102,11 @@ function productFromRow(row) {
     price: money(row.price),
     location: row.location,
     desc: row.description,
-    status: row.status,
+    status: moderationStatus === 'down' ? 'down' : row.status,
+    businessStatus: row.status,
+    moderationStatus,
+    moderationReason: row.moderation_reason || '',
+    moderatedAt: timestamp(row.moderated_at),
     sellerId: String(row.seller_id),
     sellerName: row.seller_name,
     buyerId: row.buyer_id ? String(row.buyer_id) : undefined,
@@ -249,6 +254,18 @@ async function recordLogin(userId) {
      where id = $1`,
     [userId]
   );
+}
+
+async function updateUserProfile(userId, name) {
+  const result = await query(
+    `update users set name = $2, updated_at = now()
+     where id = $1 and not is_disabled
+     returning id, student_id, name, campus, is_admin, school_email,
+       email_verified_at, verification_method`,
+    [userId, name]
+  );
+  if (!result.rows[0]) throw new AppError(404, '用户不存在或账号已停用');
+  return publicUser(result.rows[0], true, true);
 }
 
 async function createSession({ tokenHash, userId, expiresAt }) {
@@ -512,6 +529,48 @@ async function getAdminUsers(search = '', status = 'all') {
   return result.rows.map(adminUserFromRow);
 }
 
+async function getAdminProducts(search = '', status = 'all') {
+  const result = await query(
+    `with intent_counts as (
+       select product_id,
+         count(*) filter (where status in ('pending', 'accepted'))::int as active_intent_count
+       from purchase_intents group by product_id
+     ), message_counts as (
+       select product_id, count(*)::int as message_count
+       from messages group by product_id
+     )
+     select p.*, seller.name as seller_name, seller.student_id as seller_student_id,
+       coalesce(i.active_intent_count, 0) as active_intent_count,
+       coalesce(m.message_count, 0) as message_count,
+       audit.action as last_moderation_action,
+       audit.reason as last_moderation_reason,
+       audit.created_at as last_moderated_at
+     from products p
+     join users seller on seller.id = p.seller_id
+     left join intent_counts i on i.product_id = p.id
+     left join message_counts m on m.product_id = p.id
+     left join lateral (
+       select action, reason, created_at
+       from admin_content_audit_log
+       where target_type = 'product' and target_id = p.id
+       order by created_at desc limit 1
+     ) audit on true
+     where (
+       $1 = '' or p.title ilike '%' || $1 || '%' or seller.name ilike '%' || $1 || '%'
+       or seller.student_id ilike '%' || $1 || '%'
+     ) and (
+       $2 = 'all'
+       or ($2 = 'active' and p.moderation_status = 'clear' and p.status in ('available', 'trading'))
+       or ($2 = 'down' and (p.moderation_status = 'down' or p.status = 'down'))
+       or ($2 in ('available', 'trading', 'sold') and p.moderation_status = 'clear' and p.status = $2)
+     )
+     order by p.created_at desc
+     limit 200`,
+    [String(search || '').trim().slice(0, 80), status]
+  );
+  return result.rows.map(adminProductFromRow);
+}
+
 async function moderateUserContent(client, userId) {
   const sellerIntents = await client.query(
     `update purchase_intents i
@@ -686,6 +745,152 @@ async function manageAdminUser(adminId, targetUserId, action) {
   });
 }
 
+async function manageAdminProduct(adminId, productId, action, reason) {
+  if (!['down', 'restore', 'delete'].includes(action)) {
+    throw new AppError(400, '不支持的商品管理操作');
+  }
+  return transaction(async (client) => {
+    const participantPreview = await client.query(
+      `select p.seller_id,
+         array(
+           select distinct i.buyer_id from purchase_intents i
+           where i.product_id = p.id and i.buyer_id is not null
+         ) as buyer_ids,
+         array(
+           select distinct participant.user_id
+           from messages m
+           cross join lateral (values (m.sender_id), (m.recipient_id)) participant(user_id)
+           where m.product_id = p.id and participant.user_id <> p.seller_id
+         ) as message_user_ids
+       from products p
+       where p.id = $1`,
+      [productId]
+    );
+    if (!participantPreview.rows[0]) throw new AppError(404, '商品不存在或已被删除');
+    const preview = participantPreview.rows[0];
+    const participants = await lockInteractionUsers(client, [
+      adminId,
+      preview.seller_id,
+      ...(preview.buyer_ids || []),
+      ...(preview.message_user_ids || [])
+    ]);
+    const admin = participants.get(String(adminId));
+    if (!admin || admin.is_disabled || !admin.is_admin) throw new AppError(403, '仅管理员可处理商品');
+    const productResult = await client.query(
+      `select p.*, seller.name as seller_name
+       from products p join users seller on seller.id = p.seller_id
+       where p.id = $1 for update of p`,
+      [productId]
+    );
+    const product = productResult.rows[0];
+    if (!product) throw new AppError(404, '商品不存在或已被删除');
+
+    const previousStatus = product.moderation_status === 'down' ? 'platform_down' : product.status;
+    let nextStatus = previousStatus;
+    let activeIntents = { rows: [] };
+    let auditAction;
+
+    if (action === 'down') {
+      if (product.moderation_status === 'down') throw new AppError(409, '商品已经由平台下架');
+      if (product.status === 'sold') throw new AppError(409, '已售商品不在公开列表，如确认违规可直接永久删除');
+      activeIntents = await client.query(
+        `update purchase_intents set status = 'canceled', updated_at = now()
+         where product_id = $1 and status in ('pending', 'accepted')
+         returning buyer_id`,
+        [productId]
+      );
+      await client.query(
+        `update products set moderation_status = 'down', moderation_reason = $2,
+           moderated_by = $3, moderated_at = now(),
+           status = case when status = 'trading' then 'available' else status end,
+           buyer_id = null, updated_at = now()
+         where id = $1`,
+        [productId, reason, adminId]
+      );
+      nextStatus = 'platform_down';
+      auditAction = 'down_product';
+    } else if (action === 'restore') {
+      if (product.moderation_status !== 'down') throw new AppError(409, '只有平台下架的商品可以解除处置');
+      nextStatus = product.status;
+      await client.query(
+        `update products set moderation_status = 'clear', moderation_reason = null,
+           moderated_by = $2, moderated_at = now(), updated_at = now()
+         where id = $1`,
+        [productId, adminId]
+      );
+      auditAction = 'restore_product';
+    } else {
+      activeIntents = await client.query(
+        `update purchase_intents set status = 'canceled', updated_at = now()
+         where product_id = $1 and status in ('pending', 'accepted')
+         returning buyer_id`,
+        [productId]
+      );
+      nextStatus = null;
+      auditAction = 'delete_product';
+    }
+
+    await client.query(
+      `insert into admin_content_audit_log
+        (admin_id, target_type, target_id, target_title, target_owner_id,
+         action, previous_status, next_status, reason)
+       values ($1, 'product', $2, $3, $4, $5, $6, $7, $8)`,
+      [adminId, product.id, product.title, product.seller_id, auditAction, previousStatus, nextStatus, reason]
+    );
+
+    const actionCopy = action === 'down'
+      ? { title: '商品已被管理员下架', body: `“${product.title}”因平台审核已下架。处理原因：${reason}` }
+      : action === 'restore'
+        ? {
+            title: product.status === 'down' ? '商品的平台处置已解除' : '商品已恢复展示',
+            body: product.status === 'down'
+              ? `“${product.title}”的平台处置已解除；该商品仍保持你此前的下架状态。复核说明：${reason}`
+              : `“${product.title}”经复核已恢复展示。处理说明：${reason}`
+          }
+        : { title: '商品已被管理员删除', body: `“${product.title}”因违规已被永久删除。处理原因：${reason}` };
+    await insertNotification(client, {
+      userId: product.seller_id,
+      type: `admin_product_${action}`,
+      title: actionCopy.title,
+      body: actionCopy.body,
+      entityType: 'product',
+      entityId: product.id
+    });
+
+    if (action !== 'restore') {
+      const affectedUsers = new Set([
+        ...(preview.buyer_ids || []),
+        ...(preview.message_user_ids || [])
+      ].map(String));
+      affectedUsers.delete(String(product.seller_id));
+      for (const buyerId of affectedUsers) {
+        await insertNotification(client, {
+          userId: buyerId,
+          type: 'admin_product_unavailable',
+          title: '相关商品已停止交易',
+          body: `“${product.title}”已由平台${action === 'delete' ? '删除' : '下架'}，对应咨询和交易已关闭。`,
+          entityType: 'product',
+          entityId: product.id
+        });
+      }
+    }
+
+    if (action === 'delete') {
+      await client.query('delete from products where id = $1', [productId]);
+    }
+
+    return {
+      id: product.id,
+      title: product.title,
+      sellerId: String(product.seller_id),
+      action,
+      status: action === 'down' ? 'down' : nextStatus,
+      moderationStatus: action === 'down' ? 'down' : 'clear',
+      deleted: action === 'delete'
+    };
+  });
+}
+
 async function getBootstrap(userId = null) {
   await expireOpenTasks();
   const usersPromise = query('select id, name, campus from users where not is_disabled order by created_at');
@@ -693,14 +898,15 @@ async function getBootstrap(userId = null) {
     ? query(
         `select p.*, u.name as seller_name
          from products p join users u on u.id = p.seller_id and not u.is_disabled
-         where p.status in ('available', 'trading') or p.seller_id = $1 or p.buyer_id = $1
+         where p.seller_id = $1
+            or (p.moderation_status = 'clear' and (p.status in ('available', 'trading') or p.buyer_id = $1))
          order by p.created_at desc`,
         [userId]
       )
     : query(
         `select p.*, u.name as seller_name
          from products p join users u on u.id = p.seller_id and not u.is_disabled
-         where p.status in ('available', 'trading')
+         where p.moderation_status = 'clear' and p.status in ('available', 'trading')
          order by p.created_at desc`
       );
   const tasksPromise = userId
@@ -850,22 +1056,24 @@ async function setProductAvailability(userId, productId, status) {
   }
   const result = await query(
     `update products set status = $3
-     where id = $1 and seller_id = $2 and status not in ('trading', 'sold')
+     where id = $1 and seller_id = $2 and moderation_status = 'clear'
+       and status not in ('trading', 'sold')
      returning *, (select name from users where id = seller_id) as seller_name`,
     [productId, userId, status]
   );
-  if (!result.rows[0]) throw new AppError(403, '无权修改该商品或商品状态不允许修改');
+  if (!result.rows[0]) throw new AppError(403, '无权修改该商品；平台下架或交易中的商品不能自行变更');
   return productFromRow(result.rows[0]);
 }
 
 async function deleteProduct(userId, productId) {
   const result = await query(
     `delete from products
-     where id = $1 and seller_id = $2 and status not in ('trading', 'sold')
+     where id = $1 and seller_id = $2 and moderation_status = 'clear'
+       and status not in ('trading', 'sold')
      returning id`,
     [productId, userId]
   );
-  if (!result.rows[0]) throw new AppError(403, '无权删除该商品或商品正在交易');
+  if (!result.rows[0]) throw new AppError(403, '无权删除该商品；平台下架或交易中的商品不能自行删除');
 }
 
 async function createTask(userId, input, requestId) {
@@ -929,7 +1137,7 @@ async function usersAreBlocked(client, firstUserId, secondUserId) {
 async function lockInteractionUsers(client, userIds) {
   const ids = [...new Set(userIds.map(String))];
   const result = await client.query(
-    `select id, is_disabled, email_verified_at
+    `select id, is_admin, is_disabled, email_verified_at
      from users where id = any($1::uuid[])
      order by id for update`,
     [ids]
@@ -1391,7 +1599,9 @@ async function createIntent(userId, productId) {
     );
     const product = productResult.rows[0];
     if (!product) throw new AppError(404, '商品不存在');
-    if (product.status !== 'available') throw new AppError(409, '商品当前不可咨询');
+    if (product.moderation_status !== 'clear' || product.status !== 'available') {
+      throw new AppError(409, '商品当前不可咨询');
+    }
     if (String(product.seller_id) === userId) throw new AppError(400, '不能购买自己的商品');
     if (await usersAreBlocked(client, userId, product.seller_id)) {
       throw new AppError(403, '你与卖家之间存在屏蔽关系，无法发起交易');
@@ -1422,12 +1632,23 @@ async function createIntent(userId, productId) {
 
 async function updateIntent(userId, intentId, action) {
   return transaction(async (client) => {
+    const previewResult = await client.query(
+      `select i.buyer_id, p.seller_id
+       from purchase_intents i join products p on p.id = i.product_id
+       where i.id = $1`,
+      [intentId]
+    );
+    const preview = previewResult.rows[0];
+    if (!preview) throw new AppError(404, '购买意向不存在');
+    const participants = await lockInteractionUsers(client, [userId, preview.seller_id, preview.buyer_id]);
+    const actor = participants.get(String(userId));
+    const buyer = participants.get(String(preview.buyer_id));
+    if (!actor || actor.is_disabled) throw new AppError(403, '账号已停用，无法处理购买意向');
     const result = await client.query(
       `select i.*, p.seller_id, p.status as product_status,
-         buyer.is_disabled as buyer_disabled
+         p.moderation_status as product_moderation_status
        from purchase_intents i join products p on p.id = i.product_id
-       join users buyer on buyer.id = i.buyer_id
-       where i.id = $1 for update of i, p, buyer`,
+       where i.id = $1 for update of i, p`,
       [intentId]
     );
     const intent = result.rows[0];
@@ -1443,11 +1664,13 @@ async function updateIntent(userId, intentId, action) {
       return { intent: intentFromRow(updated.rows[0]) };
     }
     if (action !== 'accept') throw new AppError(400, '购买意向操作不合法');
-    if (intent.buyer_disabled) throw new AppError(409, '买家账号已停用，不能接受该意向');
+    if (!buyer || buyer.is_disabled) throw new AppError(409, '买家账号已停用，不能接受该意向');
     if (await usersAreBlocked(client, intent.seller_id, intent.buyer_id)) {
       throw new AppError(403, '你与买家之间存在屏蔽关系，不能接受该意向');
     }
-    if (intent.product_status !== 'available') throw new AppError(409, '商品已经不处于在售状态');
+    if (intent.product_moderation_status !== 'clear' || intent.product_status !== 'available') {
+      throw new AppError(409, '商品已经不处于可交易状态');
+    }
 
     const updatedIntent = await client.query(
       "update purchase_intents set status = 'accepted' where id = $1 returning *",
@@ -1477,6 +1700,7 @@ async function updateTrade(userId, productId, action) {
     const product = productResult.rows[0];
     if (!product) throw new AppError(404, '商品不存在');
     if (String(product.seller_id) !== userId) throw new AppError(403, '只有卖家可以处理交易');
+    if (product.moderation_status !== 'clear') throw new AppError(409, '商品已被平台下架，不能继续交易');
     if (product.status !== 'trading') throw new AppError(409, '商品不在交易中');
 
     const nextProductStatus = action === 'sold' ? 'sold' : action === 'cancel' ? 'available' : null;
@@ -1504,24 +1728,35 @@ async function updateTrade(userId, productId, action) {
 
 async function createMessage(userId, input) {
   return transaction(async (client) => {
+    const ownerPreview = await client.query('select seller_id from products where id = $1', [input.productId]);
+    if (!ownerPreview.rows[0]) throw new AppError(404, '商品不存在');
+    const sellerId = String(ownerPreview.rows[0].seller_id);
+    const participants = await lockInteractionUsers(client, [userId, input.peerId, sellerId]);
+    const actor = participants.get(String(userId));
+    const peer = participants.get(String(input.peerId));
+    if (!actor || actor.is_disabled) throw new AppError(403, '账号已停用，无法发送消息');
+    if (!actor.email_verified_at) throw new AppError(403, '请先完成校园身份认证');
+    if (!peer || peer.is_disabled) throw new AppError(409, '对方账号已停用');
     const access = await client.query(
-      `select p.seller_id, i.buyer_id
+      `select p.seller_id, p.status as product_status,
+         p.moderation_status as product_moderation_status, i.buyer_id
        from products p
-       join users seller on seller.id = p.seller_id and not seller.is_disabled
-       join users peer on peer.id = $3 and not peer.is_disabled
        left join purchase_intents i
          on i.product_id = p.id and i.buyer_id in ($2, $3)
-       where p.id = $1`,
+         and i.status in ('pending', 'accepted', 'sold')
+       where p.id = $1 for update of p`,
       [input.productId, userId, input.peerId]
     );
     const row = access.rows[0];
     if (!row) throw new AppError(404, '商品不存在');
-    const sellerId = String(row.seller_id);
     const buyerId = row.buyer_id ? String(row.buyer_id) : null;
     const allowed =
       (userId === sellerId && input.peerId === buyerId) ||
       (userId === buyerId && input.peerId === sellerId);
     if (!allowed) throw new AppError(403, '无权在该会话中发送消息');
+    if (row.product_moderation_status !== 'clear' || row.product_status === 'down') {
+      throw new AppError(409, '商品已下架，当前会话已关闭');
+    }
     if (await usersAreBlocked(client, userId, input.peerId)) {
       throw new AppError(403, '你与对方之间存在屏蔽关系，无法发送消息');
     }
@@ -1557,7 +1792,10 @@ async function getMessagesSince(userId, afterCursor = 0, limit = 100) {
      join users recipient on recipient.id = m.recipient_id and not recipient.is_disabled
      where (m.sender_id = $1 or m.recipient_id = $1)
        and (m.created_at > $2::timestamptz or (m.created_at = $2::timestamptz and m.id > $3))
-       and (p.status in ('available', 'trading') or p.seller_id = $1 or p.buyer_id = $1)
+       and (p.seller_id = $1 or (
+         p.moderation_status = 'clear'
+         and (p.status in ('available', 'trading') or p.buyer_id = $1)
+       ))
        and not exists (
          select 1 from user_blocks b
          where (b.blocker_id = $1 and b.blocked_id in (m.sender_id, m.recipient_id))
@@ -1575,6 +1813,18 @@ async function getMessagesSince(userId, afterCursor = 0, limit = 100) {
   };
 }
 
+function adminProductFromRow(row) {
+  return {
+    ...productFromRow(row),
+    sellerStudentId: row.seller_student_id,
+    activeIntentCount: Number(row.active_intent_count || 0),
+    messageCount: Number(row.message_count || 0),
+    lastModerationAction: row.last_moderation_action || '',
+    lastModerationReason: row.last_moderation_reason || '',
+    lastModeratedAt: timestamp(row.last_moderated_at)
+  };
+}
+
 module.exports = {
   AppError,
   databaseConfigured: Boolean(pool),
@@ -1586,6 +1836,7 @@ module.exports = {
   findUserByStudentId,
   createUser,
   recordLogin,
+  updateUserProfile,
   updateSchoolEmail,
   markIdentityVerified,
   findVerifiedUserForReset,
@@ -1598,7 +1849,9 @@ module.exports = {
   deleteSession,
   getAdminOverview,
   getAdminUsers,
+  getAdminProducts,
   manageAdminUser,
+  manageAdminProduct,
   getBootstrap,
   createProduct,
   setProductAvailability,

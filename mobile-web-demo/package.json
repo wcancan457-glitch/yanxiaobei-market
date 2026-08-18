@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check database.js && node --check mailer.js && node --check content-security.js && node --check student-id.js && node --check school-email.js && node --check scripts/run-migrations.js && node --check scripts/configure-app-role.js && node --check scripts/migrate-json-to-postgres.js && node --check scripts/verify-database.js && node --check scripts/verify-mailer.js && node scripts/test-student-id.js && node scripts/test-school-email.js && node scripts/test-input-security.js",
+    "check": "node --check server.js && node --check database.js && node --check mailer.js && node --check content-security.js && node --check student-id.js && node --check school-email.js && node --check nickname.js && node --check scripts/run-migrations.js && node --check scripts/configure-app-role.js && node --check scripts/migrate-json-to-postgres.js && node --check scripts/verify-database.js && node --check scripts/verify-mailer.js && node scripts/test-student-id.js && node scripts/test-school-email.js && node scripts/test-nickname.js && node scripts/test-input-security.js",
     "mail:verify": "node scripts/verify-mailer.js",
     "db:migrate": "node scripts/run-migrations.js",
     "db:configure-role": "node scripts/configure-app-role.js",

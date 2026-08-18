@@ -8,7 +8,8 @@ async function main() {
      where table_schema = 'public'
        and table_name in (
          'users', 'sessions', 'products', 'tasks', 'purchase_intents', 'messages',
-         'auth_tokens', 'task_applications', 'notifications', 'user_blocks', 'reports'
+         'auth_tokens', 'task_applications', 'notifications', 'user_blocks', 'reports',
+         'admin_content_audit_log'
        )
      order by table_name`
   );
@@ -22,7 +23,8 @@ async function main() {
       (select count(*)::int from task_applications) as task_applications,
       (select count(*)::int from notifications) as notifications,
       (select count(*)::int from user_blocks) as blocks,
-      (select count(*)::int from reports) as reports`
+      (select count(*)::int from reports) as reports,
+      (select count(*)::int from admin_content_audit_log) as content_moderation_actions`
   );
   console.log(JSON.stringify({
     ok: true,

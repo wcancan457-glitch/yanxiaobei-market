@@ -17,11 +17,12 @@ async function main() {
   const taskId = `test_flow_${suffix}`;
   const blockedTaskId = `test_block_${suffix}`;
   const productId = `test_product_${suffix}`;
+  const adminProductId = `test_admin_product_${suffix}`;
   const moderationProductId = `test_moderation_product_${suffix}`;
   const moderationTaskId = `test_moderation_task_${suffix}`;
   const tokenHash = crypto.createHash('sha256').update(`token:${suffix}`).digest('hex');
   const wrongTokenHash = crypto.createHash('sha256').update(`wrong:${suffix}`).digest('hex');
-  const cleanupEntityIds = [taskId, blockedTaskId, productId, moderationProductId, moderationTaskId];
+  const cleanupEntityIds = [taskId, blockedTaskId, productId, adminProductId, moderationProductId, moderationTaskId];
   let reportId = '';
   let moderationReportId = '';
   let temporaryUserId = '';
@@ -130,6 +131,81 @@ async function main() {
     }
     await db.unblockUser(String(members[0].id), String(members[1].id));
 
+    await db.query(
+      `insert into products
+        (id, title, category, item_condition, campus, campus_text, price, location,
+         description, seller_id)
+       values ($1, '管理员商品处置测试', '生活用品', '全新', 'pingleyuan', '平乐园校区',
+         1, '教学楼大厅', '自动化测试商品', $2)`,
+      [adminProductId, members[0].id]
+    );
+    const listedAdminProducts = await db.getAdminProducts('管理员商品处置测试', 'all');
+    if (!listedAdminProducts.some((product) => product.id === adminProductId)) {
+      throw new Error('Admin product list did not return the target product');
+    }
+    await db.manageAdminProduct(String(admin.id), adminProductId, 'down', '自动化测试违规下架');
+    const downProduct = await db.query(
+      'select status, moderation_status, moderation_reason from products where id = $1',
+      [adminProductId]
+    );
+    if (downProduct.rows[0]?.status !== 'available' || downProduct.rows[0]?.moderation_status !== 'down') {
+      throw new Error('Admin moderation state did not independently take down the product');
+    }
+    let sellerRestoreRejected = false;
+    try {
+      await db.setProductAvailability(String(members[0].id), adminProductId, 'available');
+    } catch (error) {
+      sellerRestoreRejected = error.status === 403;
+    }
+    let sellerDeleteRejected = false;
+    try {
+      await db.deleteProduct(String(members[0].id), adminProductId);
+    } catch (error) {
+      sellerDeleteRejected = error.status === 403;
+    }
+    if (!sellerRestoreRejected || !sellerDeleteRejected) {
+      throw new Error('Seller could bypass an administrator product takedown');
+    }
+    await db.manageAdminProduct(String(admin.id), adminProductId, 'restore', '自动化测试复核恢复');
+    const restoredProduct = await db.query(
+      'select status, moderation_status, moderation_reason from products where id = $1',
+      [adminProductId]
+    );
+    if (restoredProduct.rows[0]?.status !== 'available' || restoredProduct.rows[0]?.moderation_status !== 'clear' || restoredProduct.rows[0]?.moderation_reason) {
+      throw new Error('Admin could not clear the independent product moderation state');
+    }
+    const soldIntentId = `test_admin_sold_intent_${suffix}`;
+    const soldMessageId = `test_admin_sold_message_${suffix}`;
+    await db.query(
+      `insert into purchase_intents (id, product_id, buyer_id, status)
+       values ($1, $2, $3, 'sold')`,
+      [soldIntentId, adminProductId, members[1].id]
+    );
+    await db.query(
+      `insert into messages (id, product_id, sender_id, recipient_id, body)
+       values ($1, $2, $3, $4, '已售商品管理员删除通知测试')`,
+      [soldMessageId, adminProductId, members[1].id, members[0].id]
+    );
+    await db.query(
+      `update products set status = 'sold', buyer_id = $2 where id = $1`,
+      [adminProductId, members[1].id]
+    );
+    await db.manageAdminProduct(String(admin.id), adminProductId, 'delete', '自动化测试永久删除');
+    const deletedProduct = await db.query('select id from products where id = $1', [adminProductId]);
+    const moderationAudit = await db.query(
+      `select count(*)::int as count from admin_content_audit_log
+       where target_type = 'product' and target_id = $1`,
+      [adminProductId]
+    );
+    const soldBuyerNotification = await db.query(
+      `select 1 from notifications
+       where user_id = $1 and entity_id = $2 and type = 'admin_product_unavailable'`,
+      [members[1].id, adminProductId]
+    );
+    if (deletedProduct.rowCount || moderationAudit.rows[0]?.count !== 3 || !soldBuyerNotification.rowCount) {
+      throw new Error('Admin product deletion or audit logging failed');
+    }
+
     const report = await db.createReport(String(members[1].id), {
       targetType: 'task',
       targetId: blockedTaskId,
@@ -146,6 +222,8 @@ async function main() {
       [tempStudentId, `flow-${suffix}@emails.bjut.edu.cn`]
     );
     temporaryUserId = String(temporary.rows[0].id);
+    const renamedUser = await db.updateUserProfile(temporaryUserId, '小北测试员');
+    if (renamedUser.name !== '小北测试员') throw new Error('Nickname update did not persist');
     let emailRaceRejected = false;
     try {
       await db.markIdentityVerified(temporaryUserId, 'email', `other-${suffix}@emails.bjut.edu.cn`);
@@ -223,6 +301,8 @@ async function main() {
       taskApplication: 'accepted',
       blockedApply: 'rejected',
       blockedIntent: 'hidden-and-rejected',
+      adminProductModeration: 'seller-proof-down-restored-deleted-and-audited',
+      nickname: 'updated',
       realtimeMessage: 'incremental-idempotent-and-keyset-paginated',
       reportCreated: Boolean(reportId),
       reportBan: 'content-removed',
@@ -232,6 +312,10 @@ async function main() {
     }, null, 2));
   } finally {
     await db.query('delete from reports where id = any($1)', [[reportId, moderationReportId].filter(Boolean)]);
+    await db.query(
+      `delete from admin_content_audit_log where target_type = 'product' and target_id = any($1)`,
+      [[adminProductId]]
+    );
     await db.query(
       `delete from user_blocks
        where (blocker_id = $1 and blocked_id = $2) or (blocker_id = $2 and blocked_id = $1)`,

@@ -16,6 +16,11 @@ const {
   normalizeSchoolEmail,
   validSchoolEmail
 } = require('./school-email');
+const {
+  FORMAT_MESSAGE: NICKNAME_FORMAT_MESSAGE,
+  normalizeNickname,
+  validNickname
+} = require('./nickname');
 
 const root = __dirname;
 const port = Number(process.env.PORT || 5177);
@@ -378,6 +383,21 @@ function text(value, maxLength, fallback = '') {
   return result || fallback;
 }
 
+function nickname(value) {
+  if (!validNickname(value)) throw new db.AppError(400, NICKNAME_FORMAT_MESSAGE, 'invalid_nickname');
+  const result = normalizeNickname(value);
+  return result;
+}
+
+function moderationReason(value) {
+  const result = String(value ?? '').trim().replace(/\s+/g, ' ');
+  const length = Array.from(result).length;
+  if (length < 4 || length > 300) {
+    throw new db.AppError(400, '请填写4-300个字符的处理原因', 'invalid_moderation_reason');
+  }
+  return result;
+}
+
 function idempotencyKey(req, label = '发布') {
   const supplied = String(req.headers['idempotency-key'] || '').trim();
   if (!supplied) return crypto.randomUUID();
@@ -508,11 +528,12 @@ async function handleApi(req, res, requestUrl) {
     const password = String(body.password || '');
     if (!validStudentId(studentId)) throw new db.AppError(400, STUDENT_ID_FORMAT_MESSAGE);
     const registeredEmail = schoolEmail(body.schoolEmail, true) || null;
+    const displayName = nickname(body.name);
     validatePassword(password);
     const user = await db.createUser({
       studentId,
       passwordHash: passwordHash(password),
-      name: text(body.name, 30, `同学${studentId.slice(-4)}`),
+      name: displayName,
       campus: text(body.campus, 30, '平乐园校区'),
       schoolEmail: registeredEmail
     });
@@ -669,6 +690,16 @@ async function handleApi(req, res, requestUrl) {
     return true;
   }
 
+  if (pathname === '/api/profile' && req.method === 'PATCH') {
+    const user = await requireUser(req);
+    enforceRateLimit(req, 'profile-update', 20, 60 * 60 * 1000, user.id);
+    const body = await readJsonBody(req);
+    const updatedUser = await db.updateUserProfile(user.id, nickname(body.name));
+    sendJson(res, 200, { ok: true, user: updatedUser });
+    publishVisibilityChanged();
+    return true;
+  }
+
   if (pathname === '/api/admin/overview' && req.method === 'GET') {
     await requireAdmin(req);
     const overview = await db.getAdminOverview();
@@ -685,6 +716,33 @@ async function handleApi(req, res, requestUrl) {
       : 'all';
     const users = await db.getAdminUsers(search, status);
     sendJson(res, 200, { ok: true, users });
+    return true;
+  }
+
+  if (pathname === '/api/admin/products' && req.method === 'GET') {
+    await requireAdmin(req);
+    const search = String(requestUrl.searchParams.get('query') || '');
+    const requestedStatus = String(requestUrl.searchParams.get('status') || 'all');
+    const status = ['all', 'active', 'available', 'trading', 'sold', 'down'].includes(requestedStatus)
+      ? requestedStatus
+      : 'all';
+    const products = await db.getAdminProducts(search, status);
+    sendJson(res, 200, { ok: true, products });
+    return true;
+  }
+
+  const adminProductMatch = pathname.match(/^\/api\/admin\/products\/([^/]+)$/);
+  if (adminProductMatch && req.method === 'PATCH') {
+    const admin = await requireAdmin(req);
+    const body = await readJsonBody(req);
+    const result = await db.manageAdminProduct(
+      admin.id,
+      adminProductMatch[1],
+      String(body.action || ''),
+      moderationReason(body.reason)
+    );
+    sendJson(res, 200, { ok: true, result });
+    publishVisibilityChanged();
     return true;
   }
 
