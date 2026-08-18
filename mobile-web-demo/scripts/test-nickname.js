@@ -1,7 +1,8 @@
 const assert = require('assert');
 const {
   normalizeNickname,
-  validNickname
+  validNickname,
+  systemNickname
 } = require('../nickname');
 
 assert.equal(normalizeNickname('  小 北  '), '小 北');
@@ -17,5 +18,10 @@ assert.equal(validNickname(`校园\u200B用户`), false);
 assert.equal(validNickname(`校园\u202E用户`), false);
 assert.equal(validNickname(`校园\u2066用户`), false);
 assert.equal(validNickname(`校园\uFEFF用户`), false);
+assert.equal(validNickname('管理员'), false);
+assert.equal(validNickname('燕小北官方客服'), false);
+assert.equal(validNickname('同学9034'), false);
+assert.equal(validNickname('昵称待设置'), false);
+assert.equal(systemNickname('S202489034'), '昵称待设置');
 
 console.log('Nickname validation tests passed');

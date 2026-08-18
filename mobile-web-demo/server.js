@@ -19,7 +19,8 @@ const {
 const {
   FORMAT_MESSAGE: NICKNAME_FORMAT_MESSAGE,
   normalizeNickname,
-  validNickname
+  validNickname,
+  systemNickname
 } = require('./nickname');
 
 const root = __dirname;
@@ -334,6 +335,13 @@ async function requireVerifiedUser(req) {
       'identity_verification_required'
     );
   }
+  if (user.nicknameRequired) {
+    throw new db.AppError(
+      428,
+      '请先设置公开昵称，再使用发布、接单和聊天功能',
+      'nickname_setup_required'
+    );
+  }
   return user;
 }
 
@@ -528,12 +536,11 @@ async function handleApi(req, res, requestUrl) {
     const password = String(body.password || '');
     if (!validStudentId(studentId)) throw new db.AppError(400, STUDENT_ID_FORMAT_MESSAGE);
     const registeredEmail = schoolEmail(body.schoolEmail, true) || null;
-    const displayName = nickname(body.name);
     validatePassword(password);
     const user = await db.createUser({
       studentId,
       passwordHash: passwordHash(password),
-      name: displayName,
+      name: systemNickname(studentId),
       campus: text(body.campus, 30, '平乐园校区'),
       schoolEmail: registeredEmail
     });
@@ -692,7 +699,7 @@ async function handleApi(req, res, requestUrl) {
 
   if (pathname === '/api/profile' && req.method === 'PATCH') {
     const user = await requireUser(req);
-    enforceRateLimit(req, 'profile-update', 20, 60 * 60 * 1000, user.id);
+    enforceRateLimit(req, 'profile-update', 10, 60 * 60 * 1000, user.id);
     const body = await readJsonBody(req);
     const updatedUser = await db.updateUserProfile(user.id, nickname(body.name));
     sendJson(res, 200, { ok: true, user: updatedUser });
@@ -753,8 +760,8 @@ async function handleApi(req, res, requestUrl) {
     const action = String(body.action || '');
     const result = await db.manageAdminUser(admin.id, adminUserMatch[1], action);
     if (action === 'disable' || action === 'force_logout') closeMessageStreamsForUser(adminUserMatch[1]);
-    if (action === 'disable' || action === 'enable') publishVisibilityChanged();
-    if (action === 'verify_identity') publishVisibilityChanged([adminUserMatch[1]]);
+    if (action === 'disable' || action === 'enable' || action === 'reset_nickname') publishVisibilityChanged();
+    if (action === 'verify_identity' || action === 'reset_nickname') publishVisibilityChanged([adminUserMatch[1]]);
     sendJson(res, 200, { ok: true, result });
     return true;
   }
@@ -801,14 +808,14 @@ async function handleApi(req, res, requestUrl) {
 
   const productMatch = pathname.match(/^\/api\/products\/([^/]+)$/);
   if (productMatch && req.method === 'PATCH') {
-    const user = await requireUser(req);
+    const user = await requireVerifiedUser(req);
     const body = await readJsonBody(req);
     const product = await db.setProductAvailability(user.id, productMatch[1], body.status);
     sendJson(res, 200, { ok: true, product });
     return true;
   }
   if (productMatch && req.method === 'DELETE') {
-    const user = await requireUser(req);
+    const user = await requireVerifiedUser(req);
     await db.deleteProduct(user.id, productMatch[1]);
     sendJson(res, 200, { ok: true });
     return true;
@@ -816,7 +823,7 @@ async function handleApi(req, res, requestUrl) {
 
   const tradeMatch = pathname.match(/^\/api\/products\/([^/]+)\/trade$/);
   if (tradeMatch && req.method === 'PATCH') {
-    const user = await requireUser(req);
+    const user = await requireVerifiedUser(req);
     const body = await readJsonBody(req);
     const result = await db.updateTrade(user.id, tradeMatch[1], body.action);
     sendJson(res, 200, { ok: true, ...result });
@@ -863,7 +870,7 @@ async function handleApi(req, res, requestUrl) {
 
   const intentMatch = pathname.match(/^\/api\/intents\/([^/]+)$/);
   if (intentMatch && req.method === 'PATCH') {
-    const user = await requireUser(req);
+    const user = await requireVerifiedUser(req);
     const body = await readJsonBody(req);
     const result = await db.updateIntent(user.id, intentMatch[1], body.action);
     sendJson(res, 200, { ok: true, ...result });

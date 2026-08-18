@@ -216,14 +216,35 @@ async function main() {
 
     const tempStudentId = `2099${String(crypto.randomInt(10_000_000, 100_000_000))}`;
     const temporary = await db.query(
-      `insert into users (student_id, name, campus, password_hash, school_email)
-       values ($1, '治理流程测试用户', '平乐园校区', '!test', $2)
+      `insert into users
+        (student_id, name, campus, password_hash, school_email, email_verified_at,
+         verification_method, nickname_change_required)
+       values ($1, '同学0000', '平乐园校区', '!test', $2, now(), 'manual', true)
        returning id`,
       [tempStudentId, `flow-${suffix}@emails.bjut.edu.cn`]
     );
     temporaryUserId = String(temporary.rows[0].id);
     const renamedUser = await db.updateUserProfile(temporaryUserId, '小北测试员');
-    if (renamedUser.name !== '小北测试员') throw new Error('Nickname update did not persist');
+    if (renamedUser.name !== '小北测试员' || renamedUser.nicknameRequired) {
+      throw new Error('Initial nickname setup did not persist');
+    }
+    let nicknameCooldownRejected = false;
+    try {
+      await db.updateUserProfile(temporaryUserId, '冷静期测试昵称');
+    } catch (error) {
+      nicknameCooldownRejected = error.status === 429 && error.code === 'nickname_change_cooldown';
+    }
+    if (!nicknameCooldownRejected) throw new Error('Nickname cooldown was not enforced');
+    await db.manageAdminUser(String(admin.id), temporaryUserId, 'reset_nickname');
+    const resetUser = await db.query(
+      'select nickname_change_required from users where id = $1',
+      [temporaryUserId]
+    );
+    if (!resetUser.rows[0]?.nickname_change_required) throw new Error('Admin nickname reset did not require onboarding');
+    const resetNickname = await db.updateUserProfile(temporaryUserId, '重新设置昵称');
+    if (resetNickname.name !== '重新设置昵称' || resetNickname.nicknameRequired) {
+      throw new Error('Nickname could not be set after an admin reset');
+    }
     let emailRaceRejected = false;
     try {
       await db.markIdentityVerified(temporaryUserId, 'email', `other-${suffix}@emails.bjut.edu.cn`);
@@ -302,7 +323,7 @@ async function main() {
       blockedApply: 'rejected',
       blockedIntent: 'hidden-and-rejected',
       adminProductModeration: 'seller-proof-down-restored-deleted-and-audited',
-      nickname: 'updated',
+      nickname: 'verified-onboarding-cooldown-and-admin-reset',
       realtimeMessage: 'incremental-idempotent-and-keyset-paginated',
       reportCreated: Boolean(reportId),
       reportBan: 'content-removed',

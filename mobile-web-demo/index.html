@@ -738,13 +738,27 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 }
 .verification-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .verification-actions .mini-btn { min-height: 44px; }
-.profile-name-form { display: grid; gap: 9px; margin-top: 12px; }
-.profile-name-form input {
+.profile-name-form, .nickname-form { display: grid; gap: 9px; margin-top: 12px; }
+.profile-name-form input, .nickname-form input {
   width: 100%; min-width: 0; height: 44px; border: 1px solid var(--line);
   border-radius: 12px; padding: 0 12px; background: #fff; color: var(--ink);
 }
-.profile-name-form input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(30, 111, 255, 0.12); outline: none; }
-.profile-name-form input[aria-invalid="true"] { border-color: var(--red-pin); }
+.profile-name-form input:focus, .nickname-form input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(30, 111, 255, 0.12); outline: none; }
+.profile-name-form input[aria-invalid="true"], .nickname-form input[aria-invalid="true"] { border-color: var(--red-pin); }
+.profile-setting-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+.profile-setting-copy { min-width: 0; display: grid; gap: 4px; }
+.profile-setting-copy span { color: var(--muted); font-size: 12px; }
+.profile-setting-copy strong { overflow-wrap: anywhere; font-size: 16px; line-height: 1.35; }
+.profile-setting-copy small { color: #486273; font-size: 12px; line-height: 1.5; }
+.profile-setting-row .mini-btn { min-height: 44px; white-space: nowrap; }
 .verification-hint {
   margin: -1px 0 0;
   color: #486273;
@@ -1280,6 +1294,19 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 .login-dialog p { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .login-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
 .login-switch { display: block; width: 100%; margin-top: 12px; border: 0; background: transparent; color: var(--blue); font-size: 13px; cursor: pointer; }
+.nickname-dialog { width: min(100%, 372px); }
+.nickname-preview {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #EEF7FA;
+  color: var(--ink);
+  display: grid;
+  gap: 4px;
+}
+.nickname-preview span { color: #486273; font-size: 12px; }
+.nickname-preview strong { overflow-wrap: anywhere; font-size: 17px; line-height: 1.35; }
+.nickname-rules { margin: 10px 0 0; padding-left: 20px; color: var(--muted); font-size: 12px; line-height: 1.65; }
+.nickname-rules li + li { margin-top: 2px; }
 
 .sheet {
   width: min(100vw, 430px);
@@ -1816,12 +1843,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             aria-describedby="studentIdHint">
           <p class="field-hint" id="studentIdHint">本科生输入纯数字学号；硕士生输入 S+9位数字；博士生输入 B+9位数字。</p>
         </div>
-        <div class="field" id="nicknameField" hidden>
-          <label for="registerNickname">公开昵称</label>
-          <input id="registerNickname" type="text" maxlength="20" autocomplete="nickname"
-            placeholder="例如：小北、螃蟹同学" aria-describedby="nicknameHint">
-          <p class="field-hint" id="nicknameHint">昵称会展示在商品、任务和聊天中，注册后仍可在“我的”页面修改。</p>
-        </div>
         <div class="field">
           <label for="studentPassword" id="studentPasswordLabel">密码</label>
           <input id="studentPassword" type="password" value="" autocomplete="current-password">
@@ -1874,6 +1895,33 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       <div class="login-actions">
         <button class="secondary-btn" id="cancelReport" type="button">取消</button>
         <button class="primary-btn" id="submitReport" type="button">提交举报</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="sheet-mask login-mask" id="nicknameMask" aria-hidden="true">
+    <section class="login-dialog nickname-dialog" role="dialog" aria-modal="true" aria-labelledby="nicknameTitle" aria-describedby="nicknameDescription">
+      <h2 id="nicknameTitle">设置公开昵称</h2>
+      <p id="nicknameDescription">完成最后一步，其他同学将在商品、任务和聊天中看到这个称呼。</p>
+      <div class="nickname-form">
+        <div class="field">
+          <label for="nicknameInput">公开昵称</label>
+          <input id="nicknameInput" type="text" maxlength="20" autocomplete="nickname"
+            placeholder="例如：小北、螃蟹同学" aria-describedby="nicknameRules">
+        </div>
+        <div class="nickname-preview" aria-live="polite">
+          <span>公开展示预览</span>
+          <strong id="nicknamePreview">你的昵称</strong>
+        </div>
+        <ul class="nickname-rules" id="nicknameRules">
+          <li>2-20个字符，不显示学号或校内邮箱</li>
+          <li>不能使用“官方、管理员、客服”等平台保留称呼</li>
+          <li id="nicknameCooldownRule">设置后90天内不能再次修改</li>
+        </ul>
+      </div>
+      <div class="login-actions">
+        <button class="secondary-btn" id="cancelNickname" type="button">暂不修改</button>
+        <button class="primary-btn" id="confirmNickname" type="button">确认昵称</button>
       </div>
     </section>
   </div>
@@ -1984,8 +2032,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const switchLoginMode = document.getElementById('switchLoginMode');
     const forgotPasswordButton = document.getElementById('forgotPasswordButton');
     const studentIdInput = document.getElementById('studentId');
-    const nicknameField = document.getElementById('nicknameField');
-    const registerNickname = document.getElementById('registerNickname');
     const studentPassword = document.getElementById('studentPassword');
     const studentPasswordLabel = document.getElementById('studentPasswordLabel');
     const schoolEmailField = document.getElementById('schoolEmailField');
@@ -1998,6 +2044,14 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const reportDescription = document.getElementById('reportDescription');
     const cancelReport = document.getElementById('cancelReport');
     const submitReport = document.getElementById('submitReport');
+    const nicknameMask = document.getElementById('nicknameMask');
+    const nicknameTitle = document.getElementById('nicknameTitle');
+    const nicknameDescription = document.getElementById('nicknameDescription');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const nicknamePreview = document.getElementById('nicknamePreview');
+    const nicknameCooldownRule = document.getElementById('nicknameCooldownRule');
+    const cancelNickname = document.getElementById('cancelNickname');
+    const confirmNickname = document.getElementById('confirmNickname');
     const adminProductMask = document.getElementById('adminProductMask');
     const adminProductActionTitle = document.getElementById('adminProductActionTitle');
     const adminProductActionDescription = document.getElementById('adminProductActionDescription');
@@ -2029,6 +2083,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     let postMode = 'product';
     let uploadedImageData = '';
     let loginMode = 'login';
+    let nicknameDialogMode = 'change';
+    let nicknameReturnFocus = null;
     let publishing = false;
     let publishRequestKey = '';
     let adminDashboard = { overview: null, users: [], products: [], reports: [] };
@@ -2842,7 +2898,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         },
         register: {
           title: '注册学号账号',
-          description: '设置公开昵称并注册账号；完成学生邮箱验证码或管理员人工核验后，才能发布和接单。',
+          description: '先建立学号账号并完成学生邮箱验证；认证通过后再设置对外展示的公开昵称。',
           confirm: '注册并登录',
           switch: '已有账号？返回登录'
         },
@@ -2863,7 +2919,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       loginDescription.textContent = copy.description;
       confirmLogin.textContent = copy.confirm;
       switchLoginMode.textContent = copy.switch;
-      nicknameField.hidden = mode !== 'register';
       schoolEmailField.hidden = !['register', 'forgot', 'reset'].includes(mode);
       authCodeField.hidden = mode !== 'reset';
       passwordField.hidden = mode === 'forgot';
@@ -2883,6 +2938,59 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       loginMask.setAttribute('aria-hidden', 'true');
     }
 
+    function formatNicknameChangeDate(timestamp) {
+      if (!timestamp) return '';
+      return new Intl.DateTimeFormat('zh-CN', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      }).format(new Date(timestamp));
+    }
+
+    function openNicknameDialog(required = false) {
+      const user = currentUser();
+      if (!user) return;
+      if (!user.isVerified) {
+        showToast('请先完成校园身份认证');
+        return;
+      }
+      nicknameDialogMode = required || user.nicknameRequired ? 'required' : 'change';
+      nicknameReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const isRequired = nicknameDialogMode === 'required';
+      nicknameTitle.textContent = isRequired ? '设置公开昵称' : '修改公开昵称';
+      nicknameDescription.textContent = isRequired
+        ? '校园身份已经确认。完成最后一步，其他同学将在商品、任务和聊天中看到这个称呼。'
+        : '新昵称会同步到商品、任务和聊天；后台会保留修改记录，普通用户看不到旧昵称。';
+      nicknameCooldownRule.textContent = isRequired
+        ? '确认后90天内不能再次修改'
+        : '修改成功后90天内不能再次修改';
+      cancelNickname.hidden = false;
+      cancelNickname.textContent = isRequired ? '退出账号' : '暂不修改';
+      confirmNickname.textContent = isRequired ? '确认并进入平台' : '确认修改';
+      const currentName = isRequired && (/^同学\d{4}$/.test(user.name || '') || user.name === '昵称待设置')
+        ? ''
+        : user.name;
+      nicknameInput.value = currentName || '';
+      nicknameInput.setAttribute('aria-invalid', 'false');
+      nicknamePreview.textContent = normalizeNickname(currentName) || '你的昵称';
+      nicknameMask.classList.add('open');
+      nicknameMask.setAttribute('aria-hidden', 'false');
+      window.setTimeout(() => nicknameInput.focus(), 0);
+    }
+
+    function closeNicknameDialog(force = false) {
+      if (!force && nicknameDialogMode === 'required' && currentUser()?.nicknameRequired) return;
+      nicknameMask.classList.remove('open');
+      nicknameMask.setAttribute('aria-hidden', 'true');
+      if (nicknameReturnFocus?.isConnected) nicknameReturnFocus.focus();
+      nicknameReturnFocus = null;
+    }
+
+    function maybeOpenRequiredNickname() {
+      const user = currentUser();
+      if (user?.isVerified && user.nicknameRequired && !nicknameMask.classList.contains('open')) {
+        openNicknameDialog(true);
+      }
+    }
+
     function closeProductSheet() {
       sheetMask.classList.remove('open');
       sheetMask.setAttribute('aria-hidden', 'true');
@@ -2897,6 +3005,11 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       if (!user.isVerified) {
         switchTab('profile');
         showToast('请先完成校园身份认证');
+        return false;
+      }
+      if (user.nicknameRequired) {
+        openNicknameDialog(true);
+        showToast('请先设置公开昵称');
         return false;
       }
       return true;
@@ -3408,19 +3521,33 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
               <button class="mini-btn" data-action="unblock-user" data-user-id="${block.userId}">取消屏蔽</button>
             </div>`).join('')
         : '<p class="empty-state" style="margin-top:8px;">暂无已屏蔽用户。</p>';
+      const nicknameNextChangeAt = Number(user.nicknameNextChangeAt || 0);
+      const nicknameCoolingDown = !user.nicknameRequired && nicknameNextChangeAt > Date.now();
+      const nicknameActionLabel = user.nicknameRequired
+        ? '完成设置'
+        : '修改昵称';
+      const nicknameStatus = !user.isVerified
+        ? '完成校园身份认证后设置'
+        : user.nicknameRequired
+          ? '尚未完成首次公开昵称设置'
+          : nicknameCoolingDown
+            ? `下次可修改：${formatNicknameChangeDate(nicknameNextChangeAt)}`
+            : '当前可以修改；修改后进入90天冷静期';
       profileList.innerHTML = `
+        ${verificationHtml}
         <article class="profile-card">
-          <h3>公开昵称</h3>
-          <p>其他同学只会看到昵称，不会看到你的学号或校内邮箱。</p>
-          <div class="profile-name-form">
-            <div class="verification-actions">
-              <input id="profileNickname" type="text" maxlength="20" value="${escapeAttribute(user.name)}" aria-label="公开昵称">
-              <button class="mini-btn primary" data-action="save-nickname">保存昵称</button>
+          <h3>个人资料</h3>
+          <p>这里管理对外展示的信息；学号和校内邮箱不会向普通用户公开。</p>
+          <div class="profile-setting-row">
+            <div class="profile-setting-copy">
+              <span>公开昵称</span>
+              <strong>${escapeHtml(user.name)}</strong>
+              <small>${escapeHtml(nicknameStatus)}</small>
             </div>
-            <span class="verification-hint">2-20个字符；修改后会同步到商品、任务和聊天。</span>
+            <button class="mini-btn ${user.nicknameRequired && user.isVerified ? 'primary' : ''}" data-action="open-nickname"
+              ${!user.isVerified || nicknameCoolingDown ? 'disabled' : ''}>${escapeHtml(nicknameActionLabel)}</button>
           </div>
         </article>
-        ${verificationHtml}
         ${user.isAdmin ? `
           <article class="profile-card admin-entry">
             <h3>管理后台</h3>
@@ -3476,6 +3603,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       if (user.isAdmin) return '<span class="status-badge">管理员</span>';
       if (user.isDisabled) return '<span class="status-badge closed">已停用</span>';
       if (!user.isVerified) return '<span class="status-badge warn">待身份认证</span>';
+      if (user.nicknameRequired) return '<span class="status-badge warn">昵称待设置</span>';
       if (user.activeSessions > 0) return '<span class="status-badge done">近 15 分钟活跃</span>';
       return '<span class="status-badge">正常</span>';
     }
@@ -3503,6 +3631,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             <span>登录与会话<strong>${user.loginCount} 次 · ${user.validSessions} 个有效会话</strong></span>
             <span>校内邮箱<strong>${escapeHtml(user.schoolEmail || '未绑定')}</strong></span>
             <span>身份认证<strong>${user.isVerified ? `已认证 · ${escapeHtml(user.verificationMethod || '未知方式')}` : '待核验'}</strong></span>
+            <span>公开昵称<strong>${user.nicknameRequired ? '待用户重新设置' : user.nicknameNextChangeAt > Date.now() ? `${escapeHtml(formatNicknameChangeDate(user.nicknameNextChangeAt))}后可修改` : '可以修改'}</strong></span>
             <span>发布商品<strong>${user.productCount} 件</strong></span>
             <span>发布任务<strong>${user.taskCount} 个</strong></span>
           </div>
@@ -3511,6 +3640,9 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
               ? '<span class="status-badge">唯一管理员，账号受保护</span>'
               : `
                 ${!user.isVerified ? `<button class="mini-btn primary" data-admin-action="verify_identity" data-user-id="${escapeHtml(user.id)}">人工认证通过</button>` : ''}
+                ${user.nicknameRequired
+                  ? '<span class="status-badge warn">等待用户设置昵称</span>'
+                  : `<button class="mini-btn" data-admin-action="reset_nickname" data-user-id="${escapeHtml(user.id)}">要求重设昵称</button>`}
                 <button class="mini-btn ${user.isDisabled ? 'primary' : 'danger'}" data-admin-action="${user.isDisabled ? 'enable' : 'disable'}" data-user-id="${escapeHtml(user.id)}">${user.isDisabled ? '恢复账号' : '停用账号'}</button>
                 ${user.validSessions > 0 && !user.isDisabled
                   ? `<button class="mini-btn" data-admin-action="force_logout" data-user-id="${escapeHtml(user.id)}">强制退出</button>`
@@ -3687,7 +3819,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     async function manageUser(button) {
       const action = button.dataset.adminAction;
       const userId = button.dataset.userId;
-      const actionLabels = { disable: '停用账号', enable: '恢复账号', force_logout: '强制退出', verify_identity: '人工认证' };
+      const actionLabels = { disable: '停用账号', enable: '恢复账号', force_logout: '强制退出', verify_identity: '人工认证', reset_nickname: '要求重设昵称' };
       const targetUser = adminDashboard.users.find((user) => user.id === userId);
       const targetLabel = targetUser ? `“${targetUser.name}”（${targetUser.studentId}）` : '该用户';
       const confirmation = action === 'disable'
@@ -3696,6 +3828,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           ? `确定强制退出${targetLabel}吗？账号不会被停用，之后仍可重新登录。`
           : action === 'verify_identity'
             ? `确认已经线下核验${targetLabel}的北工大学生身份吗？通过后该账号可以发布、接单和聊天。`
+            : action === 'reset_nickname'
+              ? `确定要求${targetLabel}重新设置昵称吗？当前昵称会立即替换为系统称呼，在对方完成重设前不能发布、接单或聊天。`
           : '';
       if (confirmation && !window.confirm(confirmation)) return;
       button.disabled = true;
@@ -3761,6 +3895,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       renderMessages();
       renderProfile();
       updateMessageBadge();
+      maybeOpenRequiredNickname();
     }
 
     function openProduct(productId) {
@@ -4389,6 +4524,77 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     loginMask.addEventListener('click', (event) => {
       if (event.target === loginMask) closeLogin();
     });
+    cancelNickname.addEventListener('click', async () => {
+      if (nicknameDialogMode !== 'required') {
+        closeNicknameDialog();
+        return;
+      }
+      cancelNickname.disabled = true;
+      try {
+        await apiRequest('/api/auth/logout', { method: 'POST' });
+        closeNicknameDialog(true);
+        await hydrateFromServer();
+        showToast('已退出登录');
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        cancelNickname.disabled = false;
+      }
+    });
+    nicknameMask.addEventListener('click', (event) => {
+      if (event.target === nicknameMask) closeNicknameDialog();
+    });
+    nicknameInput.addEventListener('input', () => {
+      nicknameInput.setAttribute('aria-invalid', 'false');
+      nicknamePreview.textContent = normalizeNickname(nicknameInput.value) || '你的昵称';
+    });
+    confirmNickname.addEventListener('click', async () => {
+      const rawDisplayName = nicknameInput.value;
+      const displayName = normalizeNickname(rawDisplayName);
+      if (!validNickname(rawDisplayName)) {
+        nicknameInput.setAttribute('aria-invalid', 'true');
+        showToast(NICKNAME_FORMAT_MESSAGE);
+        return;
+      }
+      confirmNickname.disabled = true;
+      try {
+        const result = await apiRequest('/api/profile', {
+          method: 'PATCH',
+          body: JSON.stringify({ name: displayName })
+        });
+        if (result.user?.id) {
+          state.users[result.user.id] = result.user;
+          state.currentUserId = result.user.id;
+        }
+        closeNicknameDialog(true);
+        await hydrateFromServer({ invalidateMessageSync: true, silent: true });
+        renderAll();
+        showToast(nicknameDialogMode === 'required' ? '公开昵称设置完成' : '昵称已更新，90天后可再次修改');
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        confirmNickname.disabled = false;
+      }
+    });
+    nicknameInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !confirmNickname.disabled) confirmNickname.click();
+    });
+    nicknameMask.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeNicknameDialog();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = [nicknameInput, cancelNickname, confirmNickname].filter((element) => !element.hidden && !element.disabled);
+      if (!focusable.length) return;
+      const currentIndex = focusable.indexOf(document.activeElement);
+      const nextIndex = event.shiftKey
+        ? (currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1)
+        : (currentIndex >= focusable.length - 1 ? 0 : currentIndex + 1);
+      event.preventDefault();
+      focusable[nextIndex].focus();
+    });
     cancelReport.addEventListener('click', closeReportDialog);
     submitReport.addEventListener('click', submitActiveReport);
     reportMask.addEventListener('click', (event) => {
@@ -4408,18 +4614,12 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       schoolEmailInput.setAttribute('aria-invalid', 'false');
     });
 
-    registerNickname.addEventListener('input', () => {
-      registerNickname.setAttribute('aria-invalid', 'false');
-    });
-
     confirmLogin.addEventListener('click', async () => {
       const id = normalizeStudentId(studentIdInput.value);
       studentIdInput.value = id;
       const password = studentPassword.value;
       const email = normalizeSchoolEmail(schoolEmailInput.value);
       const code = authCodeInput.value.trim();
-      const rawDisplayName = registerNickname.value;
-      const displayName = normalizeNickname(rawDisplayName);
       if (!id) {
         showToast('请输入学号');
         return;
@@ -4431,11 +4631,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       }
       if (!password && loginMode !== 'forgot') {
         showToast('请输入密码');
-        return;
-      }
-      if (loginMode === 'register' && !validNickname(rawDisplayName)) {
-        registerNickname.setAttribute('aria-invalid', 'true');
-        showToast(NICKNAME_FORMAT_MESSAGE);
         return;
       }
       if (['forgot', 'reset'].includes(loginMode) && !email) {
@@ -4480,7 +4675,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             body: JSON.stringify({
               studentId: id,
               password,
-              name: loginMode === 'register' ? displayName : undefined,
               schoolEmail: loginMode === 'register' ? email : undefined
             })
           });
@@ -4492,9 +4686,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             if (result.verificationSent) startVerificationCooldown(60);
             switchTab('profile');
             showToast(result.verificationSent ? '注册成功，验证码已发送到校内邮箱' : '注册成功，请完成校园身份认证');
-          } else if (/^同学\d{4}$/.test(currentUser()?.name || '')) {
-            switchTab('profile');
-            showToast('请先把旧版系统昵称修改为你的公开昵称');
           } else {
             showToast(currentUser()?.isVerified ? '登录成功' : '登录成功，请先完成校园身份认证');
           }
@@ -4554,28 +4745,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         } catch (error) {
           showToast(error.message);
         }
-      } else if (action === 'save-nickname') {
-        const input = document.getElementById('profileNickname');
-        const rawDisplayName = input?.value || '';
-        const displayName = normalizeNickname(rawDisplayName);
-        if (!validNickname(rawDisplayName)) {
-          input?.setAttribute('aria-invalid', 'true');
-          showToast(NICKNAME_FORMAT_MESSAGE);
-          return;
-        }
-        button.disabled = true;
-        try {
-          await apiRequest('/api/profile', {
-            method: 'PATCH',
-            body: JSON.stringify({ name: displayName })
-          });
-          await hydrateFromServer({ invalidateMessageSync: true, silent: true });
-          showToast('昵称已更新');
-        } catch (error) {
-          showToast(error.message);
-        } finally {
-          button.disabled = false;
-        }
+      } else if (action === 'open-nickname') {
+        openNicknameDialog(Boolean(currentUser()?.nicknameRequired));
       } else if (action === 'task-cancel' || action === 'task-done' || action === 'task-withdraw') {
         const task = state.tasks.find((item) => item.id === button.dataset.id);
         if (!task) return;

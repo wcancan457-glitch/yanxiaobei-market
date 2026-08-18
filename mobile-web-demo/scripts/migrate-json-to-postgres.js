@@ -75,17 +75,23 @@ async function main() {
     for (const user of users.values()) {
       const result = await client.query(
         `insert into users
-          (student_id, name, campus, password_hash, email_verified_at, verification_method)
-         values ($1, $2, $3, $4, now(), 'legacy')
+          (student_id, name, campus, password_hash, email_verified_at, verification_method,
+           nickname_change_required)
+         values ($1, case when $5 then '昵称待设置' else $2 end, $3, $4, now(), 'legacy', $5)
          on conflict (student_id) do update set
-           name = excluded.name,
            campus = excluded.campus,
            password_hash = case
              when users.password_hash = '!disabled' then excluded.password_hash
              else users.password_hash
            end
          returning id`,
-        [user.studentId, user.name, user.campus, user.passwordHash]
+        [
+          user.studentId,
+          user.name,
+          user.campus,
+          user.passwordHash,
+          user.name === '校园用户' || /^同学\d{4}$/.test(user.name)
+        ]
       );
       userIds.set(user.studentId, String(result.rows[0].id));
     }

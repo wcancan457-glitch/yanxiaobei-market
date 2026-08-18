@@ -2,6 +2,7 @@ const { Pool } = require('pg');
 const { randomUUID } = require('crypto');
 
 const databaseUrl = String(process.env.DATABASE_URL || '').trim();
+const NICKNAME_CHANGE_COOLDOWN_MS = 90 * 24 * 60 * 60 * 1000;
 
 class AppError extends Error {
   constructor(status, message, code = 'request_failed') {
@@ -86,6 +87,11 @@ function publicUser(row, includeStudentId = false, includeRole = false) {
     user.isVerified = Boolean(row.email_verified_at);
     user.schoolEmail = row.school_email || '';
     user.verificationMethod = row.verification_method || '';
+    user.nicknameRequired = Boolean(row.nickname_change_required);
+    user.nicknameUpdatedAt = timestamp(row.nickname_updated_at);
+    user.nicknameNextChangeAt = row.nickname_updated_at
+      ? timestamp(row.nickname_updated_at) + NICKNAME_CHANGE_COOLDOWN_MS
+      : 0;
   }
   return user;
 }
@@ -218,7 +224,8 @@ async function healthcheck() {
 async function findUserByStudentId(studentId) {
   const result = await query(
     `select id, student_id, name, campus, password_hash, is_admin, is_disabled,
-       school_email, email_verified_at, verification_method
+       school_email, email_verified_at, verification_method,
+       nickname_change_required, nickname_updated_at
      from users where student_id = $1`,
     [studentId]
   );
@@ -229,10 +236,11 @@ async function createUser({ studentId, name, campus, passwordHash, schoolEmail =
   try {
     const result = await query(
       `insert into users
-        (student_id, name, campus, password_hash, school_email, last_login_at, login_count)
-       values ($1, $2, $3, $4, $5, now(), 1)
+        (student_id, name, campus, password_hash, school_email, last_login_at, login_count,
+         nickname_change_required)
+       values ($1, $2, $3, $4, $5, now(), 1, true)
        returning id, student_id, name, campus, is_admin, school_email,
-         email_verified_at, verification_method`,
+         email_verified_at, verification_method, nickname_change_required, nickname_updated_at`,
       [studentId, name, campus, passwordHash, schoolEmail]
     );
     return publicUser(result.rows[0], true, true);
@@ -257,15 +265,50 @@ async function recordLogin(userId) {
 }
 
 async function updateUserProfile(userId, name) {
-  const result = await query(
-    `update users set name = $2, updated_at = now()
-     where id = $1 and not is_disabled
-     returning id, student_id, name, campus, is_admin, school_email,
-       email_verified_at, verification_method`,
-    [userId, name]
-  );
-  if (!result.rows[0]) throw new AppError(404, '用户不存在或账号已停用');
-  return publicUser(result.rows[0], true, true);
+  return transaction(async (client) => {
+    const currentResult = await client.query(
+      `select id, student_id, name, campus, is_admin, is_disabled, school_email,
+         email_verified_at, verification_method, nickname_change_required, nickname_updated_at
+       from users where id = $1 for update`,
+      [userId]
+    );
+    const current = currentResult.rows[0];
+    if (!current || current.is_disabled) throw new AppError(404, '用户不存在或账号已停用');
+    if (!current.email_verified_at) {
+      throw new AppError(403, '请先完成校园身份认证，再设置公开昵称', 'identity_verification_required');
+    }
+    if (current.name === name && !current.nickname_change_required) return publicUser(current, true, true);
+
+    if (!current.nickname_change_required && current.nickname_updated_at) {
+      const nextChangeAt = new Date(current.nickname_updated_at).getTime() + NICKNAME_CHANGE_COOLDOWN_MS;
+      const retryAfter = Math.max(0, Math.ceil((nextChangeAt - Date.now()) / 1000));
+      if (retryAfter > 0) {
+        const date = new Intl.DateTimeFormat('zh-CN', {
+          timeZone: 'Asia/Shanghai', year: 'numeric', month: 'long', day: 'numeric'
+        }).format(new Date(nextChangeAt));
+        const error = new AppError(429, `昵称修改后需要等待90天，请在${date}后再试`, 'nickname_change_cooldown');
+        error.retryAfter = retryAfter;
+        throw error;
+      }
+    }
+
+    const changeType = current.nickname_change_required ? 'initial' : 'user_change';
+    const result = await client.query(
+      `update users
+       set name = $2, nickname_change_required = false, nickname_updated_at = now()
+       where id = $1
+       returning id, student_id, name, campus, is_admin, school_email,
+         email_verified_at, verification_method, nickname_change_required, nickname_updated_at`,
+      [userId, name]
+    );
+    await client.query(
+      `insert into nickname_change_history
+        (user_id, changed_by_user_id, previous_name, next_name, change_type)
+       values ($1, $1, $2, $3, $4)`,
+      [userId, current.name, name, changeType]
+    );
+    return publicUser(result.rows[0], true, true);
+  });
 }
 
 async function createSession({ tokenHash, userId, expiresAt }) {
@@ -289,8 +332,9 @@ async function getSessionUser(tokenHash) {
        and s.user_id = u.id
        and s.expires_at > now()
        and not u.is_disabled
-     returning u.id, u.student_id, u.name, u.campus, u.is_admin,
-       u.school_email, u.email_verified_at, u.verification_method`,
+      returning u.id, u.student_id, u.name, u.campus, u.is_admin,
+        u.school_email, u.email_verified_at, u.verification_method,
+        u.nickname_change_required, u.nickname_updated_at`,
     [tokenHash]
   );
   return result.rows[0] ? publicUser(result.rows[0], true, true) : null;
@@ -312,7 +356,7 @@ async function updateSchoolEmail(userId, schoolEmail) {
              verification_method = case when $3 then null else verification_method end
          where id = $1
          returning id, student_id, name, campus, is_admin, school_email,
-           email_verified_at, verification_method`,
+           email_verified_at, verification_method, nickname_change_required, nickname_updated_at`,
         [userId, schoolEmail, changed]
       );
       if (changed) {
@@ -338,7 +382,7 @@ async function markIdentityVerified(userId, method = 'email', expectedEmail = nu
      where id = $1
        and ($3::text is null or lower(school_email) = lower($3))
      returning id, student_id, name, campus, is_admin, school_email,
-       email_verified_at, verification_method`,
+       email_verified_at, verification_method, nickname_change_required, nickname_updated_at`,
     [userId, method, expectedEmail]
   );
   if (!result.rows[0]) throw new AppError(409, '校内邮箱已变更，请重新获取验证码', 'school_email_changed');
@@ -447,6 +491,11 @@ function adminUserFromRow(row) {
     isVerified: Boolean(row.email_verified_at),
     schoolEmail: row.school_email || '',
     verificationMethod: row.verification_method || '',
+    nicknameRequired: Boolean(row.nickname_change_required),
+    nicknameUpdatedAt: timestamp(row.nickname_updated_at),
+    nicknameNextChangeAt: row.nickname_updated_at
+      ? timestamp(row.nickname_updated_at) + NICKNAME_CHANGE_COOLDOWN_MS
+      : 0,
     registeredAt: timestamp(row.created_at),
     lastLoginAt: timestamp(row.last_login_at),
     loginCount: Number(row.login_count || 0),
@@ -503,8 +552,9 @@ async function getAdminUsers(search = '', status = 'all') {
        from sessions where expires_at > now()
        group by user_id
      )
-     select u.id, u.student_id, u.name, u.campus, u.is_admin, u.is_disabled,
+      select u.id, u.student_id, u.name, u.campus, u.is_admin, u.is_disabled,
        u.school_email, u.email_verified_at, u.verification_method,
+       u.nickname_change_required, u.nickname_updated_at,
        u.created_at, u.last_login_at, u.login_count,
        coalesce(s.valid_sessions, 0) as valid_sessions,
        coalesce(s.active_sessions, 0) as active_sessions,
@@ -690,12 +740,13 @@ async function moderateUserContent(client, userId) {
 }
 
 async function manageAdminUser(adminId, targetUserId, action) {
-  if (!['disable', 'enable', 'force_logout', 'verify_identity'].includes(action)) {
+  if (!['disable', 'enable', 'force_logout', 'verify_identity', 'reset_nickname'].includes(action)) {
     throw new AppError(400, '不支持的用户管理操作');
   }
   return transaction(async (client) => {
     const targetResult = await client.query(
-      `select id, student_id, is_admin, is_disabled, email_verified_at
+      `select id, student_id, name, is_admin, is_disabled, email_verified_at,
+         nickname_change_required, nickname_updated_at
        from users where id = $1 for update`,
       [targetUserId]
     );
@@ -723,6 +774,28 @@ async function manageAdminUser(adminId, targetUserId, action) {
         entityType: 'user',
         entityId: String(target.id)
       });
+    } else if (action === 'reset_nickname') {
+      const fallbackName = '昵称待设置';
+      await client.query(
+        `update users
+         set name = $2, nickname_change_required = true, nickname_updated_at = null
+         where id = $1`,
+        [target.id, fallbackName]
+      );
+      await client.query(
+        `insert into nickname_change_history
+          (user_id, changed_by_user_id, previous_name, next_name, change_type)
+         values ($1, $2, $3, $4, 'admin_reset')`,
+        [target.id, adminId, target.name, fallbackName]
+      );
+      await insertNotification(client, {
+        userId: target.id,
+        type: 'nickname_reset',
+        title: '请重新设置公开昵称',
+        body: '原昵称已由平台重置。完成校园身份认证后，请重新设置昵称再继续发布、接单或聊天。',
+        entityType: 'user',
+        entityId: String(target.id)
+      });
     }
 
     let sessionsRevoked = 0;
@@ -740,6 +813,7 @@ async function manageAdminUser(adminId, targetUserId, action) {
       studentId: target.student_id,
       isDisabled: action === 'disable' ? true : action === 'enable' ? false : target.is_disabled,
       isVerified: action === 'verify_identity' ? true : Boolean(target.email_verified_at),
+      nicknameRequired: action === 'reset_nickname' ? true : Boolean(target.nickname_change_required),
       sessionsRevoked
     };
   });
