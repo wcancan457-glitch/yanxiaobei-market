@@ -3,7 +3,11 @@ const db = require('../database');
 
 async function main() {
   if (!db.databaseConfigured) throw new Error('DATABASE_URL is required');
-  const users = (await db.query('select id, is_admin from users order by is_admin desc, created_at limit 3')).rows;
+  const users = (await db.query(
+    `select id, is_admin from users
+     where not is_disabled and (is_admin or email_verified_at is not null)
+     order by is_admin desc, created_at limit 10`
+  )).rows;
   if (users.length < 3) throw new Error('Platform flow test requires at least three users');
   const admin = users.find((user) => user.is_admin);
   const members = users.filter((user) => !user.is_admin);
