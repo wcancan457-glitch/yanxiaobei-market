@@ -1,0 +1,37 @@
+name: Diagnose production server
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read sanitized application errors
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          timeout: 60s
+          command_timeout: 2m
+          script: |
+            set -eu
+            echo "SERVICE=$(systemctl is-active yanxiaobei-market)"
+            echo "NGINX=$(systemctl is-active nginx)"
+            curl --fail --silent --show-error --max-time 10 http://127.0.0.1:5177/api/health
+            echo
+            echo "RECENT_ERRORS"
+            journalctl -u yanxiaobei-market --since "30 minutes ago" --no-pager -o cat \
+              | tail -n 240 \
+              | sed -E \
+                  -e 's/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[uuid]/gi' \
+                  -e 's/[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/[email]@\1/g' \
+                  -e 's/(password|token|secret|code)([=: ]+)[^ ,}]+/\1\2[redacted]/gi' \
+              | grep -E -i 'error|code:|constraint:|detail:|permission denied|does not exist|violates|failed' \
+              | tail -n 80 || true
