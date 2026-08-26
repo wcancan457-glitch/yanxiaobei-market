@@ -10,8 +10,11 @@ if (!databaseUrl) throw new Error('DATABASE_URL is required for HTTP flow tests'
 
 const administrativeDatabaseUrl = String(process.env.TEST_ADMIN_DATABASE_URL || databaseUrl).trim();
 const localDatabase = /@(localhost|127\.0\.0\.1)(:|\/)/i.test(administrativeDatabaseUrl);
+const administrativeConnectionUrl = new URL(administrativeDatabaseUrl);
+administrativeConnectionUrl.searchParams.delete('sslmode');
+administrativeConnectionUrl.searchParams.delete('uselibpqcompat');
 const pool = new Pool({
-  connectionString: administrativeDatabaseUrl,
+  connectionString: administrativeConnectionUrl.toString(),
   ssl: localDatabase ? false : { rejectUnauthorized: false }
 });
 const studentId = `2099${String(Date.now()).slice(-10)}`;
