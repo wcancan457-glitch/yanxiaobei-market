@@ -38,6 +38,10 @@ jobs:
           cache: npm
           cache-dependency-path: mobile-web-demo/package-lock.json
       - run: npm ci
+      - name: Create Supabase-compatible database roles
+        run: >-
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1
+          -c "create role anon nologin; create role authenticated nologin;"
       - run: npm run db:migrate
       - run: npm run check
       - run: npm run test:http
