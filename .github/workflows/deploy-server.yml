@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: production-deployment
+  # v2 avoids stale queued records left behind by the 2026-08-26 Actions outage.
+  group: production-deployment-v2
   cancel-in-progress: false
 
 jobs:
