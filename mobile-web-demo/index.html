@@ -12,26 +12,34 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Source Han Sans";
+  src: local("Noto Sans SC"), local("Source Han Sans SC"), local("Noto Sans CJK SC");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
-  --paper: #F4EEE1;
-  --paper-deep: #EAE1CF;
-  --card: #FFFDF7;
+  --paper: #FFFFFF;
+  --paper-deep: #F5F7F9;
+  --card: #FFFFFF;
   --ink: #1D3458;
   --ink-2: #46608C;
   --muted: #4C5A72;
-  --line: #DDD3BE;
-  --blue: #0094BE;
-  --blue-btn: #0079A3;
+  --line: #E7EBEF;
+  --blue: #01AADB;
+  --blue-btn: #01AADB;
   --blue-deep: #123D7E;
-  --cyan: #0094BE;
+  --cyan: #01AADB;
   --red-pin: #E2574C;
   --amber: #EFA83C;
   --green: #2F9E5B;
   --shadow-1: 0 1px 2px rgba(29, 52, 88, 0.05), 0 8px 20px rgba(29, 52, 88, 0.08);
   --shadow-2: 0 2px 4px rgba(29, 52, 88, 0.06), 0 16px 36px rgba(29, 52, 88, 0.13);
   --radius: 16px;
-  --font-display: "ZCOOL KuaiLe", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-body: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Source Han Sans", "Noto Sans SC", "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+  --font-body: "Source Han Sans", "Noto Sans SC", "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -40,7 +48,7 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  background: #E7DFCE;
+  background: #FFFFFF;
   color: var(--ink);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -1362,6 +1370,257 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ===== 已确认首页方案：白底、搜索优先、分层筛选、双列商品流 ===== */
+.phone-shell { background: #fff; box-shadow: 0 24px 80px rgba(29, 52, 88, 0.14); }
+
+.topbar {
+  padding: 10px 14px 12px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  overflow: visible;
+}
+.app-status { padding: 0 2px 8px; font-size: 11px; line-height: 1; font-weight: 800; }
+.status-icons { font-size: 11px; letter-spacing: 0; font-weight: 700; }
+.home-search-row {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 9px;
+}
+.top-mascot {
+  position: static;
+  width: 46px;
+  height: 49px;
+  object-fit: contain;
+  opacity: 1;
+  transform: none;
+  filter: drop-shadow(0 4px 5px rgba(29, 52, 88, 0.14));
+}
+.school-emblem {
+  position: static;
+  width: 37px;
+  height: 37px;
+  justify-self: end;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: rotate(7deg);
+  box-shadow: 0 4px 10px rgba(29, 52, 88, 0.12);
+}
+.search-box {
+  min-width: 0;
+  height: 43px;
+  margin: 0;
+  padding: 0 12px;
+  gap: 9px;
+  grid-template-columns: 18px minmax(0, 1fr);
+  border: 0;
+  border-radius: 13px;
+  background: #F5F7F9;
+  box-shadow: none;
+  font-size: 12px;
+}
+.search-box svg { width: 18px; height: 18px; }
+.search-box input { font-size: 12px; font-weight: 500; }
+
+.home-module-switch {
+  display: flex;
+  gap: 7px;
+  margin: 10px 14px 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #F1F3F5;
+}
+.home-module-tab {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 9px;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 800;
+  transition: background-color 150ms ease, box-shadow 150ms ease, color 150ms ease;
+}
+.home-module-tab.active {
+  background: #fff;
+  color: var(--ink);
+  font-weight: 900;
+  box-shadow: 0 3px 8px rgba(29, 52, 88, 0.09);
+}
+
+.home-campus-tabs {
+  height: 49px;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+.home-campus-tab {
+  position: relative;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+.home-campus-tab::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 20px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--blue);
+  transform: translateX(-50%) scaleX(0);
+}
+.home-campus-tab.active { color: var(--blue); font-weight: 800; }
+.home-campus-tab.active::after { transform: translateX(-50%) scaleX(1); }
+
+.category-module { padding: 14px 17px 12px; }
+.category-module .quick-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+.category-module .quick-item {
+  min-width: 0;
+  min-height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+}
+.category-module .quick-item::before { display: none; }
+.category-module .quick-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--cat, var(--blue)) 11%, transparent);
+  color: var(--cat, var(--blue));
+}
+.category-module .quick-icon img { width: 17px; height: 17px; opacity: 0.66; }
+.category-module .quick-item.active { color: var(--blue); font-weight: 800; }
+.category-module .quick-item.active .quick-icon { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--blue) 38%, transparent); }
+
+.home-content-section { padding: 2px 14px 0; }
+.home-content-section .product-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.home-content-section .product-list .empty-state { grid-column: 1 / -1; }
+.home-content-section .product-card {
+  display: block;
+  height: auto;
+  align-self: start;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 7px 18px rgba(29, 52, 88, 0.10);
+}
+.home-content-section .product-card::before { display: none; }
+.home-content-section .product-img { aspect-ratio: 1 / 0.82; background: #EEF1F3; }
+.home-content-section .product-img::after { display: none; }
+.product-campus-badge,
+.product-state-badge {
+  position: absolute;
+  top: 8px;
+  z-index: 2;
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 6px rgba(29, 52, 88, 0.10);
+  color: var(--blue);
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 900;
+}
+.product-campus-badge { left: 8px; }
+.product-state-badge { right: 8px; color: #8B5B0D; background: rgba(255, 241, 207, 0.94); }
+.home-content-section .product-info { gap: 0; padding: 10px 10px 9px; overflow: visible; }
+.home-content-section .product-card .product-title {
+  margin: 0;
+  white-space: normal;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 800;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.home-content-section .product-card .meta-row { gap: 4px; margin-top: 7px; }
+.home-content-section .product-card .tag {
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: #F1F3F5;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+.home-content-section .product-card .price-row { min-height: 0; margin-top: 9px; align-items: flex-end; }
+.home-content-section .product-card .price { font-size: 18px; line-height: 1; font-weight: 900; }
+.product-interest { color: #788395; font-size: 9px; line-height: 1.2; white-space: nowrap; }
+.home-content-section .product-card .seller-row { gap: 5px; margin-top: 8px; color: var(--muted); font-size: 9px; font-weight: 500; }
+.home-content-section .product-card .seller-avatar { width: 19px; height: 19px; padding: 0; overflow: hidden; background: #DFF4F8; }
+.home-content-section .product-card .seller-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.campus-verified { margin-left: auto; color: var(--blue); font-weight: 800; white-space: nowrap; }
+
+#taskModule.home-content-section { padding-top: 8px; }
+#taskModule .task-card { border: 0; background: #fff; box-shadow: 0 7px 18px rgba(29, 52, 88, 0.10); }
+
+.bottom-nav {
+  height: calc(76px + env(safe-area-inset-bottom));
+  padding: 5px 6px env(safe-area-inset-bottom);
+  gap: 0;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid var(--line);
+}
+.bottom-nav .nav-btn {
+  min-width: 0;
+  min-height: 66px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 0;
+  color: #59677C;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+}
+.nav-icon { position: relative; width: 25px; height: 25px; transform-origin: 50% 58%; }
+.nav-icon > img { position: absolute; inset: 0; width: 25px; height: 25px; transition: opacity 90ms ease; }
+.nav-icon .fill { opacity: 0; }
+.bottom-nav .nav-btn.active { color: var(--blue); font-weight: 900; }
+.bottom-nav .nav-btn.active .nav-icon .line { opacity: 0; }
+.bottom-nav .nav-btn.active .nav-icon .fill { opacity: 1; }
+.bottom-nav .nav-btn.pop .nav-icon { animation: nav-pop 440ms cubic-bezier(.2, .72, .22, 1); }
+@keyframes nav-pop {
+  0% { transform: translateY(0) scale(1); }
+  18% { transform: translateY(1px) scale(.72); }
+  46% { transform: translateY(-3px) scale(1.22); }
+  66% { transform: translateY(0) scale(.93); }
+  82% { transform: translateY(-1px) scale(1.07); }
+  100% { transform: translateY(0) scale(1); }
+}
+.bottom-nav .nav-badge { top: -4px; left: 17px; }
+
 /* ===== 桌面壳 ===== */
 @media (min-width: 700px) {
   body { padding: 24px 0; }
@@ -1383,70 +1642,59 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
         <header class="topbar">
           <div class="app-status">
             <span>9:41</span>
-            <span class="status-icons">▮▮▮  ◠  ▭</span>
+            <span class="status-icons">校园网 · 92%</span>
           </div>
-          <img class="school-emblem" src="assets/bjut-emblem-bg.png" alt="北京工业大学校徽">
-          <img class="top-mascot" src="assets/yanxiaobei-transparent.png" alt="燕小北">
-          <div class="hero-brand">
-
-            <h1>燕小北集市</h1>
-            <p>把二手群里的闲置、互助和交易状态，整理成一个清楚可靠的校园集市。</p>
-          </div>
-          <div class="search-box" role="search">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.8"/><path d="m20 20-3.3-3.3"/></svg></span>
-            <input id="searchInput" type="search" placeholder="搜索教材、台灯、自行车、取文件" autocomplete="off">
+          <div class="home-search-row">
+            <img class="top-mascot" src="assets/yanxiaobei-transparent.png" alt="燕小北">
+            <div class="search-box" role="search">
+              <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.8"/><path d="m20 20-3.3-3.3"/></svg></span>
+              <input id="searchInput" type="search" placeholder="搜索教材、台灯、自行车" autocomplete="off">
+            </div>
+            <img class="school-emblem" src="assets/bjut-emblem-bg.png" alt="北京工业大学校徽">
           </div>
         </header>
 
-        <nav class="filters" aria-label="校区筛选">
-          <button class="chip active" data-filter="all">全部</button>
-          <button class="chip" data-filter="pingleyuan">平乐园</button>
-          <button class="chip" data-filter="zhonglan">中蓝</button>
+        <nav class="home-module-switch" aria-label="内容模块切换">
+          <button class="home-module-tab active" data-module="products" type="button">热门闲置</button>
+          <button class="home-module-tab" data-module="tasks" type="button">互助任务</button>
         </nav>
 
-        <section class="section">
-          <div class="section-head">
-            <h2>精选分类</h2>
-          </div>
+        <nav class="home-campus-tabs" aria-label="校区筛选">
+          <button class="home-campus-tab active" data-filter="all" type="button">全部</button>
+          <button class="home-campus-tab" data-filter="pingleyuan" type="button">平乐园</button>
+          <button class="home-campus-tab" data-filter="zhonglan" type="button">中蓝</button>
+        </nav>
+
+        <section class="category-module" id="categoryModule" aria-label="商品分类">
           <div class="quick-grid">
-            <button class="quick-item" data-toast="已切换到教材专区">
-              <span class="quick-icon"><img src="assets/icon-textbook.svg" alt=""></span>
+            <button class="quick-item" style="--cat:#D68B39" data-toast="已切换到教材专区" type="button">
+              <span class="quick-icon"><img src="https://api.iconify.design/mingcute/book-2-line.svg?color=%23d68b39" alt=""></span>
               教材
             </button>
-            <button class="quick-item" data-toast="已切换到数码专区">
-              <span class="quick-icon"><img src="assets/icon-digital.svg" alt=""></span>
+            <button class="quick-item" style="--cat:#5579BA" data-toast="已切换到数码专区" type="button">
+              <span class="quick-icon"><img src="https://api.iconify.design/mingcute/laptop-line.svg?color=%235579ba" alt=""></span>
               数码
             </button>
-            <button class="quick-item" data-toast="已切换到生活用品">
-              <span class="quick-icon"><img src="assets/icon-life.svg" alt=""></span>
+            <button class="quick-item" style="--cat:#4F987D" data-toast="已切换到生活用品" type="button">
+              <span class="quick-icon"><img src="https://api.iconify.design/mingcute/desk-lamp-line.svg?color=%234f987d" alt=""></span>
               生活
             </button>
-            <button class="quick-item" data-toast="已切换到服饰专区">
-              <span class="quick-icon"><img src="assets/icon-clothes.svg" alt=""></span>
+            <button class="quick-item" style="--cat:#C56F8F" data-toast="已切换到服饰专区" type="button">
+              <span class="quick-icon"><img src="https://api.iconify.design/mingcute/t-shirt-2-line.svg?color=%23c56f8f" alt=""></span>
               服饰
             </button>
-            <button class="quick-item" data-toast="已切换到运动专区">
-              <span class="quick-icon"><img src="assets/icon-sport.svg" alt=""></span>
+            <button class="quick-item" style="--cat:#D7664E" data-toast="已切换到运动专区" type="button">
+              <span class="quick-icon"><img src="https://api.iconify.design/mingcute/basketball-line.svg?color=%23d7664e" alt=""></span>
               运动
             </button>
-            <button class="quick-item" data-toast="已切换到乐器专区">
-              <span class="quick-icon"><img src="assets/icon-music.svg" alt=""></span>
+            <button class="quick-item" style="--cat:#7461B5" data-toast="已切换到乐器专区" type="button">
+              <span class="quick-icon"><img src="https://api.iconify.design/mingcute/music-2-line.svg?color=%237461b5" alt=""></span>
               乐器
             </button>
           </div>
         </section>
 
-        <nav class="filters module-switch" aria-label="内容模块切换">
-          <button class="chip active" data-module="products">热门闲置</button>
-          <button class="chip" data-module="tasks">互助任务</button>
-        </nav>
-
-        <section class="section" id="productModule">
-          <div class="section-head">
-            <h2>热门闲置</h2>
-            <button data-tab="list" aria-label="查看更多闲置">更多 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5.5 6.5 6.5L9 18.5"/></svg></button>
-          </div>
-
+        <section class="section home-content-section" id="productModule">
           <div class="product-list" id="productList">
             <button class="product-card" data-campus="pingleyuan" data-title="近代史教材与重点笔记" data-price="18" data-img="img-book" data-location="平乐园校区 · 图书馆门口" data-state="在售" data-desc="教材干净，附复习重点和课堂笔记，适合期末复习。">
               <div class="product-img img-book">书</div>
@@ -1501,11 +1749,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           </div>
         </section>
 
-        <section class="section" id="taskModule" hidden>
-          <div class="section-head">
-            <h2>互助任务</h2>
-            <button data-tab="post">发布任务</button>
-          </div>
+        <section class="section home-content-section" id="taskModule" hidden>
           <div class="task-strip" id="taskList">
             <div class="empty-state">正在加载互助任务…</div>
           </div>
@@ -1523,7 +1767,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             <label class="photo-upload" id="photoUpload" data-post-mode="product">
               <span id="photoUploadText">添加商品图片</span>
               <img id="photoPreview" src="assets/yanxiaobei-blue-bg.png" alt="商品图片预览">
-              <input id="photoInput" type="file" accept="image/*">
+              <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp">
             </label>
             <div class="field">
               <label for="title" id="titleLabel">商品标题</label>
@@ -1786,10 +2030,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     </section>
 
     <nav class="bottom-nav" aria-label="底部导航">
-      <button class="nav-btn active" data-tab="home"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.3 12 4.6l8 6.7"/><path d="M6.2 9.7V19a1 1 0 0 0 1 1h9.6a1 1 0 0 0 1-1V9.7"/><path d="M10 20v-4.6h4V20"/></svg></span><span>首页</span></button>
-      <button class="nav-btn" data-tab="post"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.6" y="3.6" width="16.8" height="16.8" rx="4.8"/><path d="M12 8.2v7.6M8.2 12h7.6"/></svg></span><span>发布</span></button>
-      <button class="nav-btn" data-tab="messages"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.8a8.2 8.2 0 0 1-8.2 8.2c-1.5 0-2.9-.4-4.1-1.1L4 20.4l1-4.5A8.2 8.2 0 1 1 21 11.8Z"/><path d="M8.3 12h.01M12 12h.01M15.7 12h.01"/></svg><span class="nav-badge" id="msgBadge"></span></span><span>消息</span></button>
-      <button class="nav-btn" data-tab="profile"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.1" r="3.5"/><path d="M5.4 19.6a6.6 6.6 0 0 1 13.2 0"/></svg></span><span>我的</span></button>
+      <button class="nav-btn active" data-tab="home" type="button"><span class="nav-icon"><img class="line" src="https://api.iconify.design/mingcute/home-5-line.svg?color=%2359677c" alt=""><img class="fill" src="https://api.iconify.design/mingcute/home-5-fill.svg?color=%2301aadb" alt=""></span><span>首页</span></button>
+      <button class="nav-btn" data-tab="post" type="button"><span class="nav-icon"><img class="line" src="https://api.iconify.design/mingcute/add-square-line.svg?color=%2359677c" alt=""><img class="fill" src="https://api.iconify.design/mingcute/add-square-fill.svg?color=%2301aadb" alt=""></span><span>发布</span></button>
+      <button class="nav-btn" data-tab="messages" type="button"><span class="nav-icon"><img class="line" src="https://api.iconify.design/mingcute/message-3-line.svg?color=%2359677c" alt=""><img class="fill" src="https://api.iconify.design/mingcute/message-3-fill.svg?color=%2301aadb" alt=""><span class="nav-badge" id="msgBadge"></span></span><span>消息</span></button>
+      <button class="nav-btn" data-tab="profile" type="button"><span class="nav-icon"><img class="line" src="https://api.iconify.design/mingcute/user-3-line.svg?color=%2359677c" alt=""><img class="fill" src="https://api.iconify.design/mingcute/user-3-fill.svg?color=%2301aadb" alt=""></span><span>我的</span></button>
     </nav>
   </main>
 
@@ -1978,6 +2222,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const productList = document.getElementById('productList');
     const productModule = document.getElementById('productModule');
     const taskModule = document.getElementById('taskModule');
+    const categoryModule = document.getElementById('categoryModule');
     const messageList = document.getElementById('messageList');
     const messageConnectionStatus = document.getElementById('messageConnectionStatus');
     const chatConnectionStatus = document.getElementById('chatConnectionStatus');
@@ -2299,15 +2544,68 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           ? { 'Content-Type': 'application/json', ...(options.headers || {}) }
           : options.headers
       });
-      const data = await res.json().catch(() => ({}));
+      const responseText = await res.text().catch(() => '');
+      let data = {};
+      try { data = responseText ? JSON.parse(responseText) : {}; } catch {}
       if (!res.ok) {
-        const error = new Error(data.error || '操作失败，请稍后重试');
+        const fallback = res.status === 413
+          ? '图片处理后仍然过大，请换一张图片后重试'
+          : res.status >= 500
+            ? '服务器暂时繁忙，请稍后重试'
+            : '操作失败，请稍后重试';
+        const error = new Error(data.error || fallback);
         error.status = res.status;
         error.code = data.code || 'request_failed';
         error.retryAfter = Number(data.retryAfter || res.headers.get('Retry-After') || 0);
         throw error;
       }
       return data;
+    }
+
+    const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    const MAX_SOURCE_IMAGE_BYTES = 15 * 1024 * 1024;
+    const MAX_IMAGE_DATA_URL_LENGTH = 2_500_000;
+
+    function loadImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(image);
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('图片无法读取，请换一张图片'));
+        };
+        image.src = url;
+      });
+    }
+
+    async function prepareProductImage(file) {
+      if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
+        throw new Error('仅支持 JPG、PNG 或 WebP 图片');
+      }
+      if (file.size > MAX_SOURCE_IMAGE_BYTES) {
+        throw new Error('原图不能超过 15MB');
+      }
+      const image = await loadImageFile(file);
+      const limits = [1600, 1280, 1024, 860];
+      const qualities = [0.82, 0.74, 0.66, 0.56];
+      for (let index = 0; index < limits.length; index += 1) {
+        const scale = Math.min(1, limits[index] / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d', { alpha: false });
+        if (!context) throw new Error('当前浏览器无法处理图片，请换用最新版浏览器');
+        context.fillStyle = '#FFFFFF';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', qualities[index]);
+        if (dataUrl.length <= MAX_IMAGE_DATA_URL_LENGTH) return dataUrl;
+      }
+      throw new Error('图片内容过于复杂，请换一张图片后重试');
     }
 
     function loadMessageOutbox() {
@@ -2873,8 +3171,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     function syncContentModule() {
       productModule.hidden = currentModule !== 'products';
       taskModule.hidden = currentModule !== 'tasks';
+      categoryModule.hidden = currentModule !== 'products';
       document.querySelectorAll('[data-module]').forEach((button) => {
         button.classList.toggle('active', button.dataset.module === currentModule);
+        button.setAttribute('aria-pressed', String(button.dataset.module === currentModule));
       });
     }
 
@@ -3113,31 +3413,30 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     function productCardHtml(product) {
       const locked = product.status === 'trading';
       const mine = currentUser()?.id === product.sellerId;
-      const label = mine ? '我的' : locked ? '暂不可咨询' : '我想要';
-      const buttonClass = locked ? 'want locked' : 'want';
+      const campusLabel = product.campus === 'pingleyuan' ? '平乐园' : '中蓝';
+      const interestText = mine ? '我的商品' : product.interestCount ? `${product.interestCount}人想要` : '刚刚发布';
+      const badges = `<span class="product-campus-badge">${campusLabel}</span>${locked ? '<span class="product-state-badge">交易中</span>' : ''}`;
       const safeImage = safeProductImageSource(product.image);
       const imageHtml = safeImage
-        ? `<div class="product-img uploaded"><img src="${escapeAttribute(safeImage)}" alt="${escapeAttribute(product.title)}"></div>`
-        : `<div class="product-img ${safeProductImageClass(product.imgClass)}">${escapeHtml(product.symbol)}</div>`;
+        ? `<div class="product-img uploaded"><img src="${escapeAttribute(safeImage)}" alt="${escapeAttribute(product.title)}">${badges}</div>`
+        : `<div class="product-img ${safeProductImageClass(product.imgClass)}">${escapeHtml(product.symbol)}${badges}</div>`;
       return `
-        <button class="product-card" data-product-id="${product.id}">
+        <button class="product-card" data-product-id="${product.id}" aria-label="查看${escapeAttribute(product.title)}详情">
           ${imageHtml}
           <div class="product-info">
             <h3 class="product-title">${escapeHtml(product.title)}</h3>
-            <p class="product-desc">${escapeHtml(product.desc)}</p>
-            <div class="seller-row">
-              <span class="seller-name">${escapeHtml(product.sellerName || '校园同学')}</span>
-              <span>·</span>
-              <span>${product.campus === 'pingleyuan' ? '平乐园' : '中蓝'}</span>
-            </div>
             <div class="meta-row">
-              <span class="tag">${escapeHtml(product.category.replace('资料', ''))}</span>
               ${product.condition && product.condition !== '未填写' ? `<span class="tag">${escapeHtml(product.condition)}</span>` : ''}
-              ${locked ? '<span class="tag yellow">交易中</span>' : '<span class="tag">在售</span>'}
+              <span class="tag">${escapeHtml(product.category.replace('资料', ''))}</span>
             </div>
             <div class="price-row">
               <span class="price">¥${escapeHtml(product.price)}</span>
-              <span class="${buttonClass}">${label}</span>
+              <span class="product-interest">${interestText}</span>
+            </div>
+            <div class="seller-row">
+              <span class="seller-avatar"><img src="assets/yanxiaobei-blue-bg.png" alt=""></span>
+              <span class="seller-name">${escapeHtml(product.sellerName || '校园同学')}</span>
+              <span class="campus-verified">校内认证</span>
             </div>
           </div>
         </button>
@@ -4432,7 +4731,14 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       }
     }
 
-    navButtons.forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
+    navButtons.forEach((button) => button.addEventListener('click', () => {
+      switchTab(button.dataset.tab);
+      if (button.classList.contains('nav-btn')) {
+        document.querySelectorAll('.bottom-nav .nav-btn').forEach((item) => item.classList.remove('pop'));
+        void button.offsetWidth;
+        button.classList.add('pop');
+      }
+    }));
     document.querySelectorAll('[data-toast]').forEach((item) => {
       item.addEventListener('click', (event) => {
         if (item.classList.contains('product-card')) return;
@@ -4445,9 +4751,9 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     document.querySelectorAll('[data-module]').forEach((button) => {
       button.addEventListener('click', () => switchContentModule(button.dataset.module));
     });
-    document.querySelectorAll('.chip[data-filter]').forEach((chip) => {
+    document.querySelectorAll('[data-filter]').forEach((chip) => {
       chip.addEventListener('click', () => {
-        document.querySelectorAll('.chip[data-filter]').forEach((item) => item.classList.remove('active'));
+        document.querySelectorAll('[data-filter]').forEach((item) => item.classList.remove('active'));
         chip.classList.add('active');
         currentFilter = chip.dataset.filter;
         renderProducts();
@@ -4463,6 +4769,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     document.querySelectorAll('.quick-item').forEach((item) => {
       item.addEventListener('click', () => {
         const text = item.textContent.trim();
+        document.querySelectorAll('.quick-item').forEach((button) => button.classList.remove('active'));
+        item.classList.add('active');
         currentCategory = text === '教材' ? '教材资料' : text === '数码' ? '数码电子' : text === '生活' ? '生活用品' : text === '服饰' ? '服饰美妆' : text === '运动' ? '运动户外' : text === '乐器' ? '乐器文具' : 'all';
         currentModule = 'products';
         syncContentModule();
@@ -4476,25 +4784,25 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     });
     postProductTab.addEventListener('click', () => setPostMode('product'));
     postTaskTab.addEventListener('click', () => setPostMode('task'));
-    photoInput.addEventListener('change', () => {
+    photoInput.addEventListener('change', async () => {
       const file = photoInput.files && photoInput.files[0];
       if (!file) return;
-      if (!file.type.startsWith('image/')) {
-        showToast('请选择图片文件');
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        showToast('图片不能超过 5MB');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        uploadedImageData = String(reader.result);
+      photoInput.disabled = true;
+      photoUploadText.textContent = '正在优化图片…';
+      try {
+        uploadedImageData = await prepareProductImage(file);
         photoPreview.src = uploadedImageData;
         photoUpload.classList.add('has-image');
         photoUploadText.textContent = '已添加图片';
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        uploadedImageData = '';
+        photoInput.value = '';
+        photoUpload.classList.remove('has-image');
+        photoUploadText.textContent = '添加商品图片';
+        showToast(error.message);
+      } finally {
+        photoInput.disabled = false;
+      }
     });
     postForm.addEventListener('submit', (event) => {
       event.preventDefault();

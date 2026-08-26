@@ -32,6 +32,7 @@ const authTokenSecret = String(process.env.AUTH_TOKEN_SECRET || '');
 const emailDeliveryConfigured = mailer.configured && authTokenSecret.length >= 32;
 const rateBuckets = new Map();
 const messageEventClients = new Map();
+const MAX_REQUEST_BODY_LENGTH = 4_000_000;
 
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -230,14 +231,19 @@ function enforceRateLimit(req, scope, limit, windowMs, subject = '') {
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
+    let exceeded = false;
     req.on('data', (chunk) => {
+      if (exceeded) return;
       body += chunk;
-      if (body.length > 7_000_000) {
-        req.destroy();
-        reject(new db.AppError(413, '请求内容过大'));
+      if (body.length > MAX_REQUEST_BODY_LENGTH) {
+        exceeded = true;
+        body = '';
+        reject(new db.AppError(413, '上传内容过大，请压缩图片后重试', 'request_too_large'));
       }
     });
-    req.on('end', () => resolve(body));
+    req.on('end', () => {
+      if (!exceeded) resolve(body);
+    });
     req.on('error', reject);
   });
 }
@@ -567,7 +573,7 @@ async function handleApi(req, res, requestUrl) {
     const password = String(body.password || '');
     const stored = await db.findUserByStudentId(studentId);
     if (!stored || !passwordMatches(password, stored.password_hash)) {
-      throw new db.AppError(401, '学号或密码错误');
+      throw new db.AppError(401, '学号或密码错误', 'invalid_credentials');
     }
     if (stored.is_disabled) {
       throw new db.AppError(403, '账号已停用，请联系平台管理员', 'account_disabled');
@@ -955,7 +961,21 @@ async function handleApi(req, res, requestUrl) {
   return false;
 }
 
+function diagnosticPath(pathname) {
+  if (pathname === '/api/auth/login') return pathname;
+  if (pathname === '/api/auth/register') return pathname;
+  if (pathname === '/api/products') return pathname;
+  if (pathname.startsWith('/api/products/')) return '/api/products/:id';
+  return pathname.replace(/[A-Za-z0-9_-]{12,}/g, ':id');
+}
+
 const server = http.createServer(async (req, res) => {
+  const suppliedRequestId = String(req.headers['x-request-id'] || '').trim();
+  const requestId = /^[A-Za-z0-9_-]{8,100}$/.test(suppliedRequestId)
+    ? suppliedRequestId
+    : crypto.randomUUID();
+  const startedAt = Date.now();
+  res.setHeader('X-Request-ID', requestId);
   if (req.method === 'OPTIONS') {
     send(res, 204, '');
     return;
@@ -968,6 +988,17 @@ const server = http.createServer(async (req, res) => {
       if (!handled) sendJson(res, 404, { ok: false, error: '接口不存在' });
     } catch (error) {
       const status = Number(error.status) || 500;
+      if ([401, 403, 413, 428, 429].includes(status) || status >= 500) {
+        console.warn(JSON.stringify({
+          event: 'api_request_failed',
+          requestId,
+          method: req.method,
+          path: diagnosticPath(requestUrl.pathname),
+          status,
+          code: error.code || 'server_error',
+          durationMs: Date.now() - startedAt
+        }));
+      }
       if (status >= 500) console.error(error);
       if (status === 429 && Number(error.retryAfter) > 0) {
         res.setHeader('Retry-After', String(Math.ceil(Number(error.retryAfter))));

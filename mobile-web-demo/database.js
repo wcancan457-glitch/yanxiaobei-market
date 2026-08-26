@@ -119,6 +119,7 @@ function productFromRow(row) {
     image: row.image_url || '',
     imgClass: row.image_class || '',
     symbol: row.symbol || '',
+    interestCount: Number(row.interest_count || 0),
     createdAt: timestamp(row.created_at)
   };
 }
@@ -970,7 +971,9 @@ async function getBootstrap(userId = null) {
   const usersPromise = query('select id, name, campus from users where not is_disabled order by created_at');
   const productsPromise = userId
     ? query(
-        `select p.*, u.name as seller_name
+        `select p.*, u.name as seller_name,
+           (select count(*) from purchase_intents i
+            where i.product_id = p.id and i.status in ('pending', 'accepted'))::int as interest_count
          from products p join users u on u.id = p.seller_id and not u.is_disabled
          where p.seller_id = $1
             or (p.moderation_status = 'clear' and (p.status in ('available', 'trading') or p.buyer_id = $1))
@@ -978,7 +981,9 @@ async function getBootstrap(userId = null) {
         [userId]
       )
     : query(
-        `select p.*, u.name as seller_name
+        `select p.*, u.name as seller_name,
+           (select count(*) from purchase_intents i
+            where i.product_id = p.id and i.status in ('pending', 'accepted'))::int as interest_count
          from products p join users u on u.id = p.seller_id and not u.is_disabled
          where p.moderation_status = 'clear' and p.status in ('available', 'trading')
          order by p.created_at desc`

@@ -26,12 +26,16 @@ jobs:
             echo "NGINX=$(systemctl is-active nginx)"
             curl --fail --silent --show-error --max-time 10 http://127.0.0.1:5177/api/health
             echo
-            echo "RECENT_ERRORS"
-            journalctl -u yanxiaobei-market --since "30 minutes ago" --no-pager -o cat \
-              | tail -n 240 \
+            echo "API_FAILURES_LAST_48H"
+            journalctl -u yanxiaobei-market --since "48 hours ago" --no-pager -o cat \
+              | tail -n 2000 \
               | sed -E \
                   -e 's/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[uuid]/gi' \
                   -e 's/[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/[email]@\1/g' \
                   -e 's/(password|token|secret|code)([=: ]+)[^ ,}]+/\1\2[redacted]/gi' \
-              | grep -E -i 'error|code:|constraint:|detail:|permission denied|does not exist|violates|failed' \
-              | tail -n 80 || true
+              | grep -E -i 'api_request_failed|error|code:|constraint:|detail:|permission denied|does not exist|violates|failed' \
+              | tail -n 160 || true
+            echo "NGINX_API_STATUS_COUNTS_RECENT_LOG"
+            tail -n 20000 /var/log/nginx/access.log 2>/dev/null \
+              | awk '$7 == "/api/auth/login" || $7 == "/api/products" { print $7, $9 }' \
+              | sort | uniq -c || true
