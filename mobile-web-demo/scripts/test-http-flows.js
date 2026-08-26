@@ -87,7 +87,7 @@ async function main() {
   userId = String(result.body.user.id);
 
   await pool.query(
-    `update users set email_verified_at = now(), verification_method = 'test'
+    `update users set email_verified_at = now(), verification_method = 'manual'
      where id = $1`,
     [userId]
   );
