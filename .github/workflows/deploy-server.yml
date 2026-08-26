@@ -10,7 +10,9 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # GitHub-hosted runners can occasionally remain queued for more than 15
+    # minutes. Keep a bounded timeout without cancelling before a runner starts.
+    timeout-minutes: 60
     steps:
       - name: Check out the latest release
         uses: actions/checkout@v4
