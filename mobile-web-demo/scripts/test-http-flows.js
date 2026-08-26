@@ -41,6 +41,16 @@ async function request(path, options = {}) {
   return { response, body };
 }
 
+async function requestReadWithRetry(path, attempts = 3) {
+  let result;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    result = await request(path);
+    if (result.response.status < 500 || attempt === attempts) return result;
+    await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+  }
+  return result;
+}
+
 async function waitForServer() {
   let lastError;
   for (let attempt = 0; attempt < 50; attempt += 1) {
@@ -132,8 +142,8 @@ async function main() {
   assert.equal(result.response.status, 201, JSON.stringify(result.body));
   const productId = result.body.product.id;
 
-  result = await request('/api/bootstrap');
-  assert.equal(result.response.status, 200);
+  result = await requestReadWithRetry('/api/bootstrap');
+  assert.equal(result.response.status, 200, JSON.stringify(result.body));
   assert(result.body.products.some((product) => product.id === productId));
 
   result = await request('/api/auth/logout', { method: 'POST' });

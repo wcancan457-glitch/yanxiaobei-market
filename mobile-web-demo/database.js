@@ -47,7 +47,19 @@ function requirePool() {
 }
 
 async function query(text, params = []) {
-  return requirePool().query(text, params);
+  const statement = String(text || '').trim();
+  const retryableRead = /^select\b/i.test(statement);
+  try {
+    return await requirePool().query(text, params);
+  } catch (error) {
+    const code = String(error.code || '');
+    const transient = code.startsWith('08') ||
+      ['53300', '57P01', '57P02', '57P03', 'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EPIPE'].includes(code) ||
+      /connection terminated|socket hang up|timeout/i.test(String(error.message || ''));
+    if (!retryableRead || !transient) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    return requirePool().query(text, params);
+  }
 }
 
 async function transaction(work) {
