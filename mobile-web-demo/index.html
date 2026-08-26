@@ -1141,40 +1141,54 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 
 /* ===== 我的 ===== */
 .profile-hero {
-  background: linear-gradient(135deg, #123D7E 0%, #0094BE 100%);
-  color: #fff;
-  padding: 24px 18px 22px;
+  background: #fff;
+  color: var(--ink);
+  padding: 22px 18px 14px;
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid var(--line);
 }
-.profile-hero::after {
-  content: "";
-  position: absolute;
-  right: -34px;
-  top: -20px;
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.10);
+.profile-hero::after { display: none; }
+.profile-hero .login-pill {
+  width: fit-content;
+  margin-top: 10px;
+  padding: 5px 9px;
+  background: #EAF8FC;
+  color: #087E9F;
+  border: 0;
 }
-.profile-hero .login-pill { background: rgba(255, 255, 255, 0.16); color: #fff; width: fit-content; margin-top: 12px; }
-.profile-hero .login-dot { background: #FFD77A; }
+.profile-hero .login-dot { background: var(--blue); }
+.profile-login-action {
+  width: fit-content;
+  min-height: 34px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(1, 170, 219, 0.22);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.profile-login-action:active { transform: scale(0.97); box-shadow: 0 2px 5px rgba(1, 170, 219, 0.20); }
 
-.profile-top { position: relative; z-index: 1; display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 13px; align-items: center; padding-right: 96px; }
+.profile-top { position: relative; z-index: 1; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 13px; align-items: center; }
 .avatar-btn {
-  width: 72px;
-  height: 72px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.34);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #EAF8FC;
+  border: 1px solid #D8F0F6;
   overflow: hidden;
   padding: 0;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 5px 14px rgba(29, 52, 88, 0.10);
 }
-.avatar-btn img { width: 150%; height: 150%; object-fit: cover; object-position: 10% 26%; transform: translate(-18px, -16px); display: block; }
+.avatar-btn img { width: 140%; height: 140%; object-fit: cover; object-position: 10% 26%; transform: translate(-14px, -12px); display: block; }
+.avatar-btn:disabled { cursor: default; }
 .profile-name { display: grid; gap: 5px; min-width: 0; }
 .profile-name strong {
-  font-size: 23px;
+  font-size: 20px;
   line-height: 1.1;
   font-weight: 800;
   overflow-wrap: anywhere;
@@ -1183,19 +1197,38 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
-.profile-name span { color: rgba(255, 255, 255, 0.84); font-size: 13px; line-height: 1.4; }
+.profile-name span { color: var(--muted); font-size: 12px; line-height: 1.4; }
 
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 16px; }
-.stat {
-  padding: 11px 8px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  text-align: center;
-  backdrop-filter: blur(4px);
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid #EEF1F4;
 }
-.stat strong { display: block; font-size: 19px; font-weight: 800; }
-.stat span { font-size: 12px; opacity: 0.88; }
+.stat {
+  min-width: 0;
+  padding: 4px 8px 3px;
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  position: relative;
+}
+.stat + .stat::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: #EEF1F4;
+}
+.stat-icon { width: 24px; height: 24px; display: block; }
+.stat-icon img { width: 100%; height: 100%; display: block; }
+.stat strong { display: block; color: var(--ink); font-size: 17px; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 12px; line-height: 1.2; }
 
 /* ===== 底部导航 ===== */
 .bottom-nav {
@@ -1334,6 +1367,15 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 .detail-item span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
 .detail-item strong { font-size: 14px; font-weight: 700; }
 .sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.sheet-trade-safety {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #EFFAFE;
+  color: #315D69;
+  font-size: 12px;
+  line-height: 1.55;
+}
 .sheet-safety-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .sheet-safety-actions .mini-btn { min-height: 44px; }
 .task-safety-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
@@ -1815,7 +1857,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             </div>
             <div class="field">
               <label for="place" id="placeLabel">公开取货地点</label>
-              <input id="place" placeholder="例如：食堂门口、教学楼大厅、校门口">
+              <input id="place" placeholder="例如：食堂门口、教学楼大厅、校门口" aria-describedby="placeSafetyHint">
+              <p class="field-hint" id="placeSafetyHint">仅填写校内公共地点；请勿填写宿舍号、房间号或门牌号。</p>
             </div>
             <div class="field">
               <label for="price" id="priceLabel">价格</label>
@@ -1840,7 +1883,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             </div>
             <div class="field" data-post-mode="product">
               <label for="productDesc">商品描述</label>
-              <textarea id="productDesc" placeholder="写清楚瑕疵、配件和交易方式，不填写宿舍号。"></textarea>
+              <textarea id="productDesc" placeholder="写清楚商品瑕疵、配件和交易方式。"></textarea>
             </div>
             <div class="field" data-post-mode="task" hidden>
               <label for="taskDesc">任务说明</label>
@@ -1890,37 +1933,18 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
             </button>
             <div class="profile-name">
               <strong id="profileName">未登录</strong>
-              <span id="profileMeta">点击头像使用学号密码登录</span>
+              <span id="profileMeta">登录后管理发布、交易与互助任务</span>
+              <button class="profile-login-action" id="profileLoginAction" type="button">登录 / 注册</button>
             </div>
           </div>
-          <div class="mascot-panel" style="width: 92px; height: 92px; min-height: 92px; position: absolute; right: 18px; top: 22px; opacity: 0.92;">
-            <img src="assets/yanxiaobei-blue-bg.png" alt="燕小北">
-          </div>
-          <div class="login-pill" id="profileLoginPill"><i class="login-dot"></i> 待登录</div>
-          <div class="stats">
-            <div class="stat"><strong id="statPost">-</strong><span>发布</span></div>
-            <div class="stat"><strong id="statSold">-</strong><span>售出</span></div>
-            <div class="stat"><strong id="statPending">-</strong><span>待确认</span></div>
+          <div class="login-pill" id="profileLoginPill" hidden><i class="login-dot"></i> 待登录</div>
+          <div class="stats" aria-label="我的交易概况">
+            <div class="stat"><span class="stat-icon"><img src="https://api.iconify.design/mingcute/add-square-fill.svg?color=%2301aadb" alt=""></span><strong id="statPost">-</strong><span>发布</span></div>
+            <div class="stat"><span class="stat-icon"><img src="https://api.iconify.design/mingcute/check-circle-fill.svg?color=%2301aadb" alt=""></span><strong id="statSold">-</strong><span>售出</span></div>
+            <div class="stat"><span class="stat-icon"><img src="https://api.iconify.design/mingcute/time-fill.svg?color=%2301aadb" alt=""></span><strong id="statPending">-</strong><span>待确认</span></div>
           </div>
         </div>
-        <div class="profile-list" id="profileList">
-          <article class="profile-card">
-            <h3>我的发布</h3>
-            <p>管理在售、交易中、已售和已下架商品。</p>
-          </article>
-          <article class="profile-card">
-            <h3>我想要</h3>
-            <p>查看我想要的商品，以及卖家的处理状态。</p>
-          </article>
-          <article class="profile-card">
-            <h3>账号与安全</h3>
-            <p>学号仅用于身份识别，不向普通用户展示。</p>
-          </article>
-          <article class="profile-card">
-            <h3>平台规则</h3>
-            <p>建议在校内公共地点面交，不填写宿舍号或门牌号。</p>
-          </article>
-        </div>
+        <div class="profile-list" id="profileList" hidden></div>
       </section>
 
       <section class="view admin-view" id="admin" aria-label="用户管理后台">
@@ -2062,7 +2086,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           <strong id="sheetLocation">平乐园校区 · 图书馆门口</strong>
         </div>
       </div>
-      <p class="product-desc" id="sheetHint" style="display:block;">平台不收集宿舍号。建议选择食堂门口、教学楼大厅、校门口等公共地点交易。</p>
+      <p class="product-desc" id="sheetHint" style="display:block;" hidden></p>
+      <p class="sheet-trade-safety">建议在食堂、图书馆、教学楼大厅等校内公共地点面交。不要在聊天中发送宿舍号、房间号或门牌号。</p>
       <div class="sheet-safety-actions" id="sheetSafetyActions">
         <button class="mini-btn" id="reportProductButton" type="button">举报商品</button>
         <button class="mini-btn danger" id="blockSellerButton" type="button">屏蔽卖家</button>
@@ -2307,6 +2332,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const profileName = document.getElementById('profileName');
     const profileMeta = document.getElementById('profileMeta');
     const profileLoginPill = document.getElementById('profileLoginPill');
+    const profileLoginAction = document.getElementById('profileLoginAction');
     const statPost = document.getElementById('statPost');
     const statSold = document.getElementById('statSold');
     const statPending = document.getElementById('statPending');
@@ -3687,15 +3713,17 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       const user = currentUser();
       if (!user) {
         profileName.textContent = '未登录';
-        profileMeta.textContent = '点击头像使用学号密码登录';
+        profileMeta.textContent = '登录后管理发布、交易与互助任务';
+        avatarLogin.setAttribute('aria-label', '登录或注册');
+        avatarLogin.disabled = false;
+        profileLoginAction.hidden = false;
+        profileLoginPill.hidden = true;
         profileLoginPill.innerHTML = '<i class="login-dot"></i> 待登录';
         statPost.textContent = '-';
         statSold.textContent = '-';
         statPending.textContent = '-';
-        profileList.innerHTML = `
-          <article class="profile-card"><h3>登录后使用</h3><p>点击头像登录后，可以发布商品、处理我想要和查看交易状态。</p></article>
-          <article class="profile-card"><h3>平台规则</h3><p>建议在校内公共地点面交，不填写宿舍号或门牌号。</p></article>
-        `;
+        profileList.replaceChildren();
+        profileList.hidden = true;
         return;
       }
 
@@ -3719,6 +3747,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
 
       profileName.textContent = user.name;
       profileMeta.textContent = `${user.studentId || user.id} · ${user.campus}`;
+      avatarLogin.setAttribute('aria-label', '当前用户头像');
+      avatarLogin.disabled = true;
+      profileLoginAction.hidden = true;
+      profileLoginPill.hidden = false;
       profileLoginPill.innerHTML = `<i class="login-dot"></i> ${user.isVerified ? '校园身份已认证' : '待校园身份认证'}`;
       statPost.textContent = String(myProducts.length);
       statSold.textContent = String(sold);
@@ -3832,6 +3864,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
           : nicknameCoolingDown
             ? `下次可修改：${formatNicknameChangeDate(nicknameNextChangeAt)}`
             : '当前可以修改；修改后进入90天冷静期';
+      profileList.hidden = false;
       profileList.innerHTML = `
         ${verificationHtml}
         <article class="profile-card">
@@ -4225,9 +4258,10 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       const locked = product.status === 'trading';
       wantButton.disabled = Boolean(mine || locked || existing);
       wantButton.textContent = mine ? '这是我的商品' : locked ? '交易中，暂不可咨询' : existing ? '已发送我想要' : '我想要';
+      sheetHint.hidden = !locked;
       sheetHint.textContent = locked
         ? '卖家已与一位买家谈定，其他买家暂时不能咨询。只有卖家取消当前交易后，商品才会恢复在售。'
-        : '平台不收集宿舍号。建议选择食堂门口、教学楼大厅、校门口等公共地点交易。';
+        : '';
       reportProductButton.hidden = Boolean(mine);
       blockSellerButton.hidden = Boolean(mine);
       reportProductButton.dataset.productId = product.id;
@@ -4828,6 +4862,7 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       if (event.target === sheetMask) closeProductSheet();
     });
     avatarLogin.addEventListener('click', openLogin);
+    profileLoginAction.addEventListener('click', openLogin);
     cancelLogin.addEventListener('click', closeLogin);
     loginMask.addEventListener('click', (event) => {
       if (event.target === loginMask) closeLogin();
