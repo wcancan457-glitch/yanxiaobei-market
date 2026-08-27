@@ -75,6 +75,60 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   box-shadow: 0 24px 80px rgba(29, 52, 88, 0.22);
 }
 
+/* ===== 燕小北开屏 ===== */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 100;
+  width: min(100vw, 430px);
+  height: 100dvh;
+  margin: 0;
+  translate: -50% 0;
+  overflow: hidden;
+  background: #EAF8FC;
+  isolation: isolate;
+  will-change: opacity;
+}
+
+.splash-screen.is-ready {
+  animation: splash-fade-out 420ms 1300ms ease-out forwards;
+}
+
+.splash-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.splash-skip {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: 14px;
+  z-index: 2;
+  min-width: 52px;
+  min-height: 44px;
+  padding: 0 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--ink);
+  box-shadow: 0 4px 16px rgba(29, 52, 88, 0.14);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.splash-screen.is-skipped { display: none; }
+
+@keyframes splash-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; visibility: hidden; }
+}
+
 .app { min-height: 100vh; padding: env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom)); }
 .view { display: none; }
 .view.active { display: block; }
@@ -89,18 +143,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   position: relative;
   overflow: hidden;
 }
-
-.app-status {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 2px 2px 10px;
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-.status-icons { letter-spacing: 2px; font-size: 15px; font-weight: 600; }
 
 .hero-brand { display: grid; gap: 8px; padding: 0 92px 10px 0; min-height: 70px; position: relative; z-index: 1; }
 
@@ -1421,8 +1463,6 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   border-bottom: 1px solid var(--line);
   overflow: visible;
 }
-.app-status { padding: 0 2px 8px; font-size: 11px; line-height: 1; font-weight: 800; }
-.status-icons { font-size: 11px; letter-spacing: 0; font-weight: 700; }
 .home-search-row {
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) 38px;
@@ -1669,23 +1709,31 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
   .phone-shell { min-height: calc(100vh - 48px); border-radius: 30px; overflow: hidden; }
   .app { min-height: calc(100vh - 48px); }
   .bottom-nav { border-radius: 0 0 30px 30px; }
+  .splash-screen { top: 24px; bottom: 24px; height: auto; border-radius: 30px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+  .splash-screen { display: none !important; }
 }
 
   </style>
 </head>
 <body>
   <main class="phone-shell">
+    <div class="splash-screen" id="splashScreen" aria-label="燕小北集市开屏：让闲置，在工大重新出发">
+      <img
+        class="splash-art"
+        src="assets/yanxiaobei-splash-cover.png"
+        alt="燕小北推着装有校园好物的购物车，宣传语：让闲置，在工大重新出发"
+        fetchpriority="high"
+        decoding="sync"
+      >
+      <button class="splash-skip" id="splashSkip" type="button" aria-label="跳过开屏动画">跳过</button>
+    </div>
     <div class="app">
       <section class="view active" id="home">
         <header class="topbar">
-          <div class="app-status">
-            <span>9:41</span>
-            <span class="status-icons">校园网 · 92%</span>
-          </div>
           <div class="home-search-row">
             <img class="top-mascot" src="assets/yanxiaobei-transparent.png" alt="燕小北">
             <div class="search-box" role="search">
@@ -2241,6 +2289,8 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
     const EMPTY_MESSAGE_CURSOR = '1970-01-01T00:00:00.000000Z|';
     const USE_API = location.protocol === 'http:' || location.protocol === 'https:';
     const phoneShell = document.querySelector('.phone-shell');
+    const splashScreen = document.getElementById('splashScreen');
+    const splashSkip = document.getElementById('splashSkip');
     const views = document.querySelectorAll('.view');
     const navButtons = document.querySelectorAll('[data-tab]');
     const toast = document.getElementById('toast');
@@ -5299,6 +5349,24 @@ input::placeholder, textarea::placeholder { color: #98A1B0; }
       const retryButton = event.target.closest('[data-retry-message]');
       if (retryButton) retryMessageOutboxEntry(retryButton.dataset.retryMessage, { manual: true });
     });
+
+    if (splashScreen && splashSkip) {
+      const startSplash = () => {
+        if (!splashScreen.classList.contains('is-skipped')) splashScreen.classList.add('is-ready');
+      };
+      if (document.readyState === 'complete') {
+        requestAnimationFrame(startSplash);
+      } else {
+        window.addEventListener('load', () => requestAnimationFrame(startSplash), { once: true });
+      }
+      window.setTimeout(startSplash, 3000);
+      splashSkip.addEventListener('click', () => {
+        splashScreen.classList.add('is-skipped');
+      });
+      splashScreen.addEventListener('animationend', (event) => {
+        if (event.animationName === 'splash-fade-out') splashScreen.hidden = true;
+      });
+    }
 
     renderAll();
     setMessageConnectionState(currentUser() ? (USE_API ? 'connecting' : 'local') : 'signedOut');
