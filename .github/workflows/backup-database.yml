@@ -24,6 +24,9 @@ jobs:
       BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
       RECOVERY_PUBLIC_KEY: ${{ inputs.recovery_public_key }}
       SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+      SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
       MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
       APP_DATABASE_URL: ${{ secrets.APP_DATABASE_URL }}
       AUTH_TOKEN_SECRET: ${{ secrets.AUTH_TOKEN_SECRET }}
@@ -66,7 +69,8 @@ jobs:
           public_key = serialization.load_pem_public_key(public_pem)
           if not isinstance(public_key, rsa.RSAPublicKey) or public_key.key_size < 3072:
               raise ValueError('Recovery key must be RSA with at least 3072 bits')
-          fields = ['MIGRATION_DATABASE_URL', 'APP_DATABASE_URL', 'AUTH_TOKEN_SECRET',
+          fields = ['SERVER_HOST', 'SERVER_USERNAME', 'SERVER_PASSWORD',
+                    'MIGRATION_DATABASE_URL', 'APP_DATABASE_URL', 'AUTH_TOKEN_SECRET',
                     'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_USER', 'SMTP_PASS', 'MAIL_FROM']
           runtime = {field: os.environ.get(field, '') for field in fields}
           source = {'repository': os.environ['GITHUB_REPOSITORY'],
