@@ -1,54 +1,101 @@
-name: Backup Supabase database
+name: Recover encrypted marketplace backup for owner migration
 
 on:
   workflow_dispatch:
-  schedule:
-    # Monday 02:20 Asia/Shanghai (Sunday 18:20 UTC)
-    - cron: '20 18 * * 0'
+    inputs:
+      source_run_id:
+        description: Existing successful backup run owned by this repository
+        required: true
+        type: string
+      recovery_public_key:
+        description: RSA public key whose private key remains on the owner's PC
+        required: true
+        type: string
 
-concurrency:
-  group: database-backup
-  cancel-in-progress: false
+permissions:
+  contents: read
+  actions: read
 
 jobs:
-  backup:
+  recover:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     env:
-      DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
       BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      RECOVERY_PUBLIC_KEY: ${{ inputs.recovery_public_key }}
+      SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+      MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+      APP_DATABASE_URL: ${{ secrets.APP_DATABASE_URL }}
+      AUTH_TOKEN_SECRET: ${{ secrets.AUTH_TOKEN_SECRET }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      MAIL_FROM: ${{ secrets.MAIL_FROM }}
     steps:
-      - name: Check required secrets
+      - name: Validate owner recovery request
         run: |
-          test -n "$DATABASE_URL" || { echo 'Missing DATABASE_URL'; exit 1; }
-          test -n "$BACKUP_PASSPHRASE" || { echo 'Missing BACKUP_PASSPHRASE'; exit 1; }
-
-      - name: Pull PostgreSQL 17 client image
-        run: docker pull postgres:17
-
-      - name: Create encrypted logical backup
-        run: |
-          set -euo pipefail
-          stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-          dump="yanxiaobei-${stamp}.dump"
-          mkdir -p backups
-          encrypted="backups/${dump}.enc"
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --env DATABASE_URL \
-            --env DUMP_FILE="$dump" \
-            --volume "$PWD:/work" \
-            --workdir /work \
-            postgres:17 \
-            sh -c 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges --file="$DUMP_FILE"'
-          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
-            -in "$dump" -out "$encrypted" -pass env:BACKUP_PASSPHRASE
-          rm -f "$dump"
-
-      - name: Upload encrypted backup
-        uses: actions/upload-artifact@v4
+          test "$SOURCE_RUN_ID" = 34782147872
+          test -n "$BACKUP_PASSPHRASE"
+          test -n "$RECOVERY_PUBLIC_KEY"
+      - uses: actions/download-artifact@v4
         with:
           name: supabase-database-backup
-          path: backups/*.enc
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: encrypted-source
+      - name: Install envelope encryption library
+        run: python -m pip install 'cryptography>=44,<51'
+      - name: Decrypt snapshot and immediately reseal to owner's public key
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p private-work sealed-recovery
+          source_file="$(find encrypted-source -type f -name '*.enc' -print -quit)"
+          test -n "$source_file"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in "$source_file" -out private-work/database.dump -pass env:BACKUP_PASSPHRASE
+          python <<'PY'
+          import base64, hashlib, io, json, os, pathlib, zipfile
+          from cryptography.hazmat.primitives import hashes, serialization
+          from cryptography.hazmat.primitives.asymmetric import padding, rsa
+          from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+          public_pem = os.environ['RECOVERY_PUBLIC_KEY'].encode('ascii')
+          public_key = serialization.load_pem_public_key(public_pem)
+          if not isinstance(public_key, rsa.RSAPublicKey) or public_key.key_size < 3072:
+              raise ValueError('Recovery key must be RSA with at least 3072 bits')
+          fields = ['MIGRATION_DATABASE_URL', 'APP_DATABASE_URL', 'AUTH_TOKEN_SECRET',
+                    'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_USER', 'SMTP_PASS', 'MAIL_FROM']
+          runtime = {field: os.environ.get(field, '') for field in fields}
+          source = {'repository': os.environ['GITHUB_REPOSITORY'],
+                    'source_run_id': os.environ['SOURCE_RUN_ID'], 'snapshot': '2026-09-13T20:53:41Z'}
+          buffer = io.BytesIO()
+          with zipfile.ZipFile(buffer, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+              archive.write('private-work/database.dump', 'database.dump')
+              archive.writestr('runtime-config.json', json.dumps(runtime))
+              archive.writestr('source-metadata.json', json.dumps(source))
+          key, nonce = AESGCM.generate_key(bit_length=256), os.urandom(12)
+          cipher = AESGCM(key).encrypt(nonce, buffer.getvalue(), b'yanxiaobei-owner-recovery-v1')
+          wrapped = public_key.encrypt(key, padding.OAEP(mgf=padding.MGF1(hashes.SHA256()),
+                                                        algorithm=hashes.SHA256(), label=None))
+          target = pathlib.Path('sealed-recovery')
+          target.joinpath('payload.bin').write_bytes(cipher)
+          manifest = {'version': 'yanxiaobei-owner-recovery-v1', 'snapshot': source['snapshot'],
+                      'nonce': base64.b64encode(nonce).decode(),
+                      'wrapped_key': base64.b64encode(wrapped).decode(),
+                      'public_key_sha256': hashlib.sha256(public_pem).hexdigest()}
+          target.joinpath('manifest.json').write_text(json.dumps(manifest, indent=2))
+          print(json.dumps({'sealed': True, 'encrypted_bytes': len(cipher),
+                            'public_key_sha256': manifest['public_key_sha256']}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: owner-sealed-recovery
+          path: sealed-recovery/*
+          retention-days: 7
           if-no-files-found: error
-          retention-days: 30
+      - name: Remove runner plaintext
+        if: always()
+        run: rm -rf private-work
